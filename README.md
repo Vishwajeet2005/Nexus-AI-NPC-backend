@@ -152,7 +152,7 @@ async def on_join(event):
 
 ---
 
-### 🤖 2. AI NPC Service — The Heart of Nexus
+### 2. AI NPC Service — The Heart of Nexus
 
 This is what makes Nexus fundamentally different from every other game backend. Nexus NPCs are not chatbots. They are **stateful AI agents** with:
 
