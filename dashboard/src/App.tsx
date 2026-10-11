@@ -22,6 +22,16 @@ const NAV = [
     ),
   },
   {
+    to: "/npc-monitor",
+    label: "NPC Monitor",
+    icon: (
+      <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+        <circle cx="12" cy="7" r="4"/>
+        <path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
+      </svg>
+    ),
+  },
+  {
     to: "/analytics",
     label: "Analytics",
     icon: (
@@ -228,9 +238,11 @@ function Shell() {
         >
           <Routes>
             <Route path="/"                                      element={<Sessions />} />
+            <Route path="/sessions"                              element={<Sessions />} />
             <Route path="/sessions/:sessionId"                  element={<NPCMonitor />} />
             <Route path="/sessions/:sessionId/npc-monitor"      element={<NPCMonitor />} />
             <Route path="/sessions/:sessionId/npc-monitor/:npcId" element={<NPCMonitor />} />
+            <Route path="/npc-monitor"                          element={<NPCMonitor />} />
             <Route path="/analytics"                            element={<Analytics />} />
             <Route path="/api-keys"                             element={<APIKeys />} />
             <Route path="/webhooks"                             element={<Webhooks />} />

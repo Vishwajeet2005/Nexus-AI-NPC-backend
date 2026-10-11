@@ -17,6 +17,7 @@ const BARS: Array<{ key: keyof EmotionalState; label: string; colour: string }> 
 
 export default function NPCMonitor() {
   const { sessionId, npcId } = useParams<{ sessionId: string; npcId: string }>();
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(sessionId ?? null);
   const [npc, setNpc]         = useState<NPC | null>(null);
   const [state, setState]     = useState<EmotionalState | null>(null);
   const [behaviour, setBehaviour] = useState<NPCBehaviour>("cooperative");
@@ -25,17 +26,29 @@ export default function NPCMonitor() {
   const [selectedNpcId, setSelectedNpcId] = useState<string | null>(npcId ?? null);
   const [sessionNpcs, setSessionNpcs]     = useState<NPC[]>([]);
 
-  const { connected, lastNpcUpdate } = useNexusWS(sessionId ?? null);
+  useEffect(() => {
+    if (sessionId) {
+      setActiveSessionId(sessionId);
+    } else {
+      api.sessions.list().then((list) => {
+        if (list && list.length > 0) {
+          setActiveSessionId(list[0].id);
+        }
+      });
+    }
+  }, [sessionId]);
+
+  const { connected, lastNpcUpdate } = useNexusWS(activeSessionId);
 
   useEffect(() => {
-    if (!sessionId) return;
-    api.npcs.listInSession(sessionId)
+    if (!activeSessionId) return;
+    api.npcs.listInSession(activeSessionId)
       .then((npcs) => {
         setSessionNpcs(npcs);
         if (!selectedNpcId && npcs.length > 0) setSelectedNpcId(npcs[0]?.id ?? null);
       })
       .catch(() => {});
-  }, [sessionId, selectedNpcId]);
+  }, [activeSessionId, selectedNpcId]);
 
   useEffect(() => {
     if (!selectedNpcId) return;
@@ -57,10 +70,10 @@ export default function NPCMonitor() {
     setBehaviour(lastNpcUpdate.behaviour);
   }, [lastNpcUpdate, selectedNpcId]);
 
-  if (!sessionId) {
+  if (!activeSessionId) {
     return (
       <div className="p-6 text-xs text-ink-3">
-        Navigate to a session first: <code className="font-mono text-blue">/sessions/[id]/npc-monitor</code>
+        No active session found. Start an interrogation first!
       </div>
     );
   }
