@@ -72,8 +72,10 @@ export function useNexusWS(sessionId: string | null): UseNexusWSResult {
       }
 
       if (type === "npc_state_changed") {
-        const payload = msg.payload as NPCStateUpdate;
-        setLastNpcUpdate(payload);
+        const payload = (msg.data ?? msg.payload) as NPCStateUpdate;
+        if (payload) {
+          setLastNpcUpdate(payload);
+        }
       }
 
       setRecentEvents((prev) => [
