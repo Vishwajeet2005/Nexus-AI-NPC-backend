@@ -34,7 +34,7 @@ from nexus_py import NexusClient
 
 # Load photorealistic TrueColor ASCII portraits and smooth emotion morphing
 try:
-    from api.data.portraits.ascii_cache import PORTRAITS, show_portrait, morph_portrait
+    from api.data.portraits.ascii_cache import PORTRAITS, show_portrait, morph_portrait, set_portrait_style
 except Exception:
     PORTRAITS = {}
 
@@ -42,6 +42,9 @@ except Exception:
         pass
 
     async def morph_portrait(from_b, to_b, frames=10, delay=0.035):
+        pass
+
+    def set_portrait_style(style):
         pass
 
 GAME_ID = "8cc751bb-10fc-4a4d-ab96-b0872e97d462"
@@ -195,6 +198,7 @@ def print_summary(turns, cracked_at, latencies, log_path):
 
 # ---------------------------------------------------------------- the demo
 async def run(args):
+    set_portrait_style(getattr(args, "style", "halfblock"))
     payload = load_profile(args.profile, args.threshold)
     log_path = Path(f"demo_run_{datetime.now():%Y%m%d_%H%M%S}.jsonl")
     scripted = iter(SCRIPTED_LINES) if args.auto else None
@@ -275,6 +279,7 @@ def main():
     parser.add_argument("--morph-frames", type=int, default=10, help="frames for emotional morph transitions (default: 10)")
     parser.add_argument("--morph-delay", type=float, default=0.035, help="seconds per morph transition frame (default: 0.035)")
     parser.add_argument("--threshold", type=float, help="override every secret's reveal_threshold (demo pacing)")
+    parser.add_argument("--style", choices=["halfblock", "ascii"], default="halfblock", help="face portrait style: 'halfblock' (default, compact micro-character ▀) or 'ascii' (classic characters)")
     parser.add_argument("--pause", type=float, default=2.5, help="seconds to linger on each reply in --auto mode")
     parser.add_argument("--type-delay", type=float, default=0.035, help="seconds per typed character in --auto mode")
     args = parser.parse_args()
