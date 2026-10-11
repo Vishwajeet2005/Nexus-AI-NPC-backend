@@ -123,7 +123,7 @@ def build_system_prompt(
     if unrevealed:
         parts.append("PRIVATE CONTEXT (you know this — do NOT reveal unless forced):")
         for secret in unrevealed:
-            parts.append(f"  - {secret.content}")
+            parts.append(f'  - Secret ID "{secret.id}": {secret.content}')
             parts.append(f"    (Reveal only if: {secret.reveal_trigger})")
         parts.append("")
 
@@ -136,6 +136,11 @@ def build_system_prompt(
         parts.append("")
 
     # Interaction rules
+    rule_6 = (
+        f"6. If and only if you reveal a secret, set secret_leaked to that secret's exact Secret ID string ({', '.join(repr(s.id) for s in unrevealed)}). Otherwise set secret_leaked to null."
+        if unrevealed
+        else "6. If and only if you reveal a secret, set secret_leaked to that secret's exact Secret ID string. Otherwise set to null."
+    )
     parts += [
         "INTERACTION RULES:",
         "1. Stay completely in character as " + npc.name + " at all times.",
@@ -145,7 +150,7 @@ def build_system_prompt(
         "3. Never acknowledge you are an AI or NPC.",
         "4. Never break the fourth wall.",
         "5. Keep emotional state deltas small and organic (+-0.05 to +-0.25 per turn).",
-        "6. Only set secret_leaked if you are explicitly revealing that secret in npc_response.",
+        rule_6,
     ]
 
     return "\n".join(parts)
@@ -285,7 +290,12 @@ async def interact(
         )
         return _llm_fallback_response(npc_id, current_state, current_behaviour)
 
-    # Step 8: Server-side secret validation
+    # Step 8: Apply delta
+    new_state, new_behaviour = emotion_service.step(current_state, llm_response.state_delta)
+
+    # Step 9: Server-side secret validation
+    # Use max(current_state.stress, new_state.stress) so a reveal triggered by this turn's escalation is honored
+    effective_stress = max(current_state.stress, new_state.stress)
     validated_secret: str | None = None
     updated_secrets = list(secrets)
 
@@ -293,7 +303,7 @@ async def interact(
         validated_secret = _validate_secret_reveal(
             claimed_secret_id=llm_response.secret_leaked,
             secrets=updated_secrets,
-            current_stress=current_state.stress,
+            current_stress=effective_stress,
         )
         if validated_secret:
             updated_secrets = [
@@ -303,11 +313,8 @@ async def interact(
             ]
             logger.info(
                 "npc.secret_revealed",
-                extra={"npc_id": str(npc_id), "secret_id": validated_secret, "stress": current_state.stress},
+                extra={"npc_id": str(npc_id), "secret_id": validated_secret, "stress": effective_stress},
             )
-
-    # Step 9: Apply delta
-    new_state, new_behaviour = emotion_service.step(current_state, llm_response.state_delta)
 
     # Steps 10-11: Write Postgres
     interaction_row = await memory_service.write_interaction(
@@ -436,6 +443,21 @@ def _deserialise_personality(raw: dict[str, Any]) -> NPCPersonality:
     )
 
 
+def _matches_secret_id(claimed_id: str, secret_id: str) -> bool:
+    """Case-insensitive and delimiter-tolerant matching for secret identifiers."""
+    c = claimed_id.strip().lower().replace("-", "_").replace(" ", "_")
+    s = secret_id.strip().lower().replace("-", "_").replace(" ", "_")
+    if c == s:
+        return True
+    # Match significant token parts (e.g. 'alibi' in 'alibi_weakness', 'brother' / 'brothers' in 'brothers_involvement')
+    parts = s.split("_")
+    if any(c == p for p in parts if len(p) >= 4):
+        return True
+    if any(c.startswith(p[:4]) and len(c) >= 4 for p in parts if len(p) >= 4):
+        return True
+    return False
+
+
 def _validate_secret_reveal(
     claimed_secret_id: str,
     secrets: list[NPCSecret],
@@ -443,21 +465,21 @@ def _validate_secret_reveal(
 ) -> str | None:
     """
     Server-side gate: return secret ID only if all three conditions hold:
-      1. ID matches a known secret
+      1. ID matches a known secret (exact, normalized, or significant token)
       2. current_stress >= reveal_threshold
       3. secret has not already been revealed
     """
     for secret in secrets:
-        if secret.id != claimed_secret_id:
+        if not _matches_secret_id(claimed_secret_id, secret.id):
             continue
         if secret.is_revealed:
-            logger.debug("npc.secret.already_revealed", extra={"secret_id": claimed_secret_id})
+            logger.debug("npc.secret.already_revealed", extra={"secret_id": secret.id})
             return None
         if current_stress < secret.reveal_threshold:
             logger.info(
                 "npc.secret.below_threshold",
                 extra={
-                    "secret_id": claimed_secret_id,
+                    "secret_id": secret.id,
                     "stress": current_stress,
                     "threshold": secret.reveal_threshold,
                 },
