@@ -13,7 +13,7 @@ export function SessionCard({ session }: { session: Session }) {
 
   return (
     <Link
-      to={`/sessions/${session.id}`}
+      to={`/sessions/${session.id}/npc-monitor`}
       className="card block p-4 hover:border-border-light hover:bg-raised transition-all duration-150 group"
     >
       <div className="flex items-start justify-between gap-2 mb-3">

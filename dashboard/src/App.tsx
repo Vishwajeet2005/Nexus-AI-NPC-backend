@@ -228,6 +228,7 @@ function Shell() {
         >
           <Routes>
             <Route path="/"                                      element={<Sessions />} />
+            <Route path="/sessions/:sessionId"                  element={<NPCMonitor />} />
             <Route path="/sessions/:sessionId/npc-monitor"      element={<NPCMonitor />} />
             <Route path="/sessions/:sessionId/npc-monitor/:npcId" element={<NPCMonitor />} />
             <Route path="/analytics"                            element={<Analytics />} />
