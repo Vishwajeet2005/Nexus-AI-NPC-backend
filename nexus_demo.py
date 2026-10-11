@@ -32,6 +32,12 @@ if sys.platform == "win32":
 
 from nexus_py import NexusClient
 
+# Load photorealistic TrueColor ASCII portraits if available
+try:
+    from api.data.portraits.ascii_cache import PORTRAITS
+except Exception:
+    PORTRAITS = {}
+
 GAME_ID = "8cc751bb-10fc-4a4d-ab96-b0872e97d462"
 
 # Your side of the conversation for --auto. Edit freely: you script the player,
@@ -96,6 +102,13 @@ def bar(value, width=20, high_is_bad=True):
 def behaviour_badge(behaviour):
     name = str(getattr(behaviour, "value", behaviour)).lower()
     return f"{BOLD}{BEHAVIOUR_COLOURS.get(name, WHITE)}[ {name.upper()} ]{RESET}"
+
+
+def show_portrait(behaviour):
+    name = str(getattr(behaviour, "value", behaviour)).lower()
+    art = PORTRAITS.get(name) or PORTRAITS.get("cooperative")
+    if art:
+        print(f"\n{art}")
 
 
 def say(who, text):
@@ -229,6 +242,8 @@ async def run(args):
             # 3) show what the audience should see
             turns += 1
             latencies.append(latency)
+            if not args.no_face:
+                show_portrait(res.behaviour)
             say(name, res.npc_response)
             print(f"  {behaviour_badge(res.behaviour)}  {DIM}{latency:.1f}s{RESET}")
             show_state(res.emotional_state, res.state_delta)
@@ -248,6 +263,7 @@ def main():
     parser.add_argument("--host", default="localhost:8000", help="Nexus API host:port (default: localhost:8000)")
     parser.add_argument("--profile", default="api/data/npcs/marcus_webb.json", help="path to the NPC profile JSON")
     parser.add_argument("--auto", action="store_true", help="type the scripted lines automatically")
+    parser.add_argument("--no-face", action="store_true", help="disable detailed ASCII portrait rendering")
     parser.add_argument("--threshold", type=float, help="override every secret's reveal_threshold (demo pacing)")
     parser.add_argument("--pause", type=float, default=2.5, help="seconds to linger on each reply in --auto mode")
     parser.add_argument("--type-delay", type=float, default=0.035, help="seconds per typed character in --auto mode")
