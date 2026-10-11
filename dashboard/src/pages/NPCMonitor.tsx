@@ -106,7 +106,7 @@ export default function NPCMonitor() {
       <div className="page-header flex items-center justify-between">
         <div>
           <h1 className="text-[15px] font-semibold text-ink">NPC Monitor</h1>
-          <p className="text-xs text-ink-3 mt-0.5 font-mono">{sessionId.slice(0, 8)}…</p>
+          <p className="text-xs text-ink-3 mt-0.5 font-mono">{activeSessionId?.slice(0, 8)}…</p>
         </div>
         <LiveIndicator live={connected} />
       </div>
