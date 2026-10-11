@@ -379,14 +379,13 @@ async def interact(
 
 async def get_memory(
     npc_id: UUID,
-    player_id: UUID,
+    player_id: UUID | None,
     db: AsyncSession,
     limit: int = 20,
     offset: int = 0,
 ) -> NPCMemoryResponse:
     """GET /v1/npcs/{npc_id}/memory — paginated cold storage read."""
     npc = await get_npc_or_404(npc_id, db)
-    await _require_session_membership(npc.session_id, player_id, db)
     
     entries, total = await memory_service.get_cold_memory(
         npc_id=npc_id,

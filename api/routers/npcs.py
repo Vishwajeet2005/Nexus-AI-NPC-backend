@@ -97,7 +97,6 @@ async def create_npc(
 )
 async def list_session_npcs(
     session_id: UUID,
-    current_user: Player = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[NPCResponse]:
     """
@@ -167,7 +166,6 @@ async def seed_marcus_webb(
 )
 async def get_npc(
     npc_id: UUID,
-    current_user: Player = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> NPCResponse:
     """
@@ -244,7 +242,6 @@ async def get_npc_memory(
     npc_id: UUID,
     limit: int = Query(default=20, ge=1, le=100, description="Max entries to return."),
     offset: int = Query(default=0, ge=0, description="Pagination offset."),
-    current_user: Player = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> NPCMemoryResponse:
     """
@@ -257,7 +254,7 @@ async def get_npc_memory(
     """
     return await npc_service.get_memory(
         npc_id=npc_id,
-        player_id=current_user.id,
+        player_id=None,
         db=db,
         limit=limit,
         offset=offset,
