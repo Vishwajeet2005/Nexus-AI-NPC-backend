@@ -29,13 +29,18 @@ export default function NPCMonitor() {
   useEffect(() => {
     if (sessionId) {
       setActiveSessionId(sessionId);
-    } else {
+      return;
+    }
+    const checkLatest = () => {
       api.sessions.list().then((list) => {
         if (list && list.length > 0) {
-          setActiveSessionId(list[0].id);
+          setActiveSessionId((prev) => (prev !== list[0].id ? list[0].id : prev));
         }
-      });
-    }
+      }).catch(() => {});
+    };
+    checkLatest();
+    const timer = setInterval(checkLatest, 3000);
+    return () => clearInterval(timer);
   }, [sessionId]);
 
   const { connected, lastNpcUpdate } = useNexusWS(activeSessionId);
@@ -65,9 +70,27 @@ export default function NPCMonitor() {
   }, [selectedNpcId]);
 
   useEffect(() => {
+    if (!selectedNpcId) return;
+    // Auto-poll every 1.5s to ensure instantaneous sync with terminal
+    const interval = setInterval(() => {
+      Promise.all([api.npcs.get(selectedNpcId), api.npcs.getMemory(selectedNpcId, 20)])
+        .then(([npcData, memData]) => {
+          setState(npcData.current_emotional_state);
+          setBehaviour(npcData.current_behaviour);
+          setMemory(memData.entries);
+        })
+        .catch(() => {});
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [selectedNpcId]);
+
+  useEffect(() => {
     if (!lastNpcUpdate || lastNpcUpdate.npc_id !== selectedNpcId) return;
     setState(lastNpcUpdate.emotional_state);
     setBehaviour(lastNpcUpdate.behaviour);
+    api.npcs.getMemory(selectedNpcId, 20)
+      .then((memData) => setMemory(memData.entries))
+      .catch(() => {});
   }, [lastNpcUpdate, selectedNpcId]);
 
   if (!activeSessionId) {
