@@ -32,11 +32,17 @@ if sys.platform == "win32":
 
 from nexus_py import NexusClient
 
-# Load photorealistic TrueColor ASCII portraits if available
+# Load photorealistic TrueColor ASCII portraits and smooth emotion morphing
 try:
-    from api.data.portraits.ascii_cache import PORTRAITS
+    from api.data.portraits.ascii_cache import PORTRAITS, show_portrait, morph_portrait
 except Exception:
     PORTRAITS = {}
+
+    def show_portrait(behaviour):
+        pass
+
+    async def morph_portrait(from_b, to_b, frames=10, delay=0.035):
+        pass
 
 GAME_ID = "8cc751bb-10fc-4a4d-ab96-b0872e97d462"
 
@@ -103,12 +109,6 @@ def behaviour_badge(behaviour):
     name = str(getattr(behaviour, "value", behaviour)).lower()
     return f"{BOLD}{BEHAVIOUR_COLOURS.get(name, WHITE)}[ {name.upper()} ]{RESET}"
 
-
-def show_portrait(behaviour):
-    name = str(getattr(behaviour, "value", behaviour)).lower()
-    art = PORTRAITS.get(name) or PORTRAITS.get("cooperative")
-    if art:
-        print(f"\n{art}")
 
 
 def say(who, text):
@@ -208,6 +208,9 @@ async def run(args):
         name = val(npc, "name", None) or payload.get("name") or "NPC"
 
         print(f"\n{BOLD}--- INTERROGATION: {name} ---{RESET}")
+        previous_behaviour = "cooperative"
+        if not args.no_face:
+            show_portrait(previous_behaviour)
         if args.auto:
             await asyncio.sleep(1.5)
 
@@ -242,8 +245,13 @@ async def run(args):
             # 3) show what the audience should see
             turns += 1
             latencies.append(latency)
+            curr_behaviour = str(getattr(res.behaviour, "value", res.behaviour)).lower()
             if not args.no_face:
-                show_portrait(res.behaviour)
+                if previous_behaviour and previous_behaviour != curr_behaviour:
+                    await morph_portrait(previous_behaviour, curr_behaviour, frames=args.morph_frames, delay=args.morph_delay)
+                else:
+                    show_portrait(curr_behaviour)
+            previous_behaviour = curr_behaviour
             say(name, res.npc_response)
             print(f"  {behaviour_badge(res.behaviour)}  {DIM}{latency:.1f}s{RESET}")
             show_state(res.emotional_state, res.state_delta)
@@ -264,6 +272,8 @@ def main():
     parser.add_argument("--profile", default="api/data/npcs/marcus_webb.json", help="path to the NPC profile JSON")
     parser.add_argument("--auto", action="store_true", help="type the scripted lines automatically")
     parser.add_argument("--no-face", action="store_true", help="disable detailed ASCII portrait rendering")
+    parser.add_argument("--morph-frames", type=int, default=10, help="frames for emotional morph transitions (default: 10)")
+    parser.add_argument("--morph-delay", type=float, default=0.035, help="seconds per morph transition frame (default: 0.035)")
     parser.add_argument("--threshold", type=float, help="override every secret's reveal_threshold (demo pacing)")
     parser.add_argument("--pause", type=float, default=2.5, help="seconds to linger on each reply in --auto mode")
     parser.add_argument("--type-delay", type=float, default=0.035, help="seconds per typed character in --auto mode")
