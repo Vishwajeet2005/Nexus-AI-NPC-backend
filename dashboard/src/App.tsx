@@ -260,9 +260,23 @@ function Shell() {
 }
 
 export default function App() {
-  const [authed, setAuthed] = useState(false);
+  const [authed, setAuthed] = useState(() => {
+    return Boolean(typeof window !== "undefined" && localStorage.getItem("nexus_token"));
+  });
 
-  if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />;
+  // Auto-login as guest if no token exists so the user never gets stuck on the login screen
+  useEffect(() => {
+    if (!authed) {
+      api.auth.guest().then((tokens) => {
+        setToken(tokens.access_token);
+        setAuthed(true);
+      }).catch(() => {});
+    }
+  }, [authed]);
+
+  if (!authed) {
+    return <LoginScreen onLogin={() => setAuthed(true)} />;
+  }
 
   return (
     <BrowserRouter>
