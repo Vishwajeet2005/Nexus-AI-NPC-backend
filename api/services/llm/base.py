@@ -42,7 +42,7 @@ from api.schemas.npc import NPCBehaviour, NPCStateDelta
 logger = logging.getLogger(__name__)
 
 # ── Timeout applied to every provider API call ─────────────────────────────────
-LLM_TIMEOUT_SECONDS: float = 10.0
+LLM_TIMEOUT_SECONDS: float = 20.0
 
 
 @dataclass
