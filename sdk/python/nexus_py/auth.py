@@ -81,6 +81,9 @@ class AuthClient:
         self._c._refresh_token = token.refresh_token
         return token
 
+    # Convenience alias for guest()
+    login_guest = guest
+
     async def refresh(self, refresh_token: str | None = None) -> TokenResponse:
         """
         Exchange a refresh token for a new access/refresh token pair.
