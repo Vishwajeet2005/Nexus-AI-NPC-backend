@@ -76,20 +76,25 @@ class GroqProvider(BaseLLMProvider):
         """
         full_system = f"{system_prompt}\n\n{self.JSON_INSTRUCTION}"
 
-        try:
-            raw_response = await asyncio.wait_for(
-                self._client.chat.completions.create(
-                    model=self._model,
-                    response_format={"type": "json_object"},
-                    messages=[
-                        {"role": "system", "content": full_system},
-                        {"role": "user", "content": user_message},
-                    ],
-                    temperature=0.8,
-                    max_tokens=512,
-                ),
+        async def _call_api(use_json_mode: bool):
+            kwargs = {
+                "model": self._model,
+                "messages": [
+                    {"role": "system", "content": full_system},
+                    {"role": "user", "content": user_message},
+                ],
+                "temperature": 0.8,
+                "max_tokens": 2048,
+            }
+            if use_json_mode:
+                kwargs["response_format"] = {"type": "json_object"}
+            return await asyncio.wait_for(
+                self._client.chat.completions.create(**kwargs),
                 timeout=LLM_TIMEOUT_SECONDS,
             )
+
+        try:
+            raw_response = await _call_api(use_json_mode=True)
         except asyncio.TimeoutError:
             logger.warning(
                 "llm.groq.timeout",
@@ -97,12 +102,29 @@ class GroqProvider(BaseLLMProvider):
             )
             return LLMResponse.timeout()
         except Exception as exc:
-            logger.error(
-                "llm.groq.api_error",
-                extra={"model": self._model, "error": str(exc)},
-                exc_info=exc,
-            )
-            return LLMResponse.error()
+            # If constrained JSON mode fails (e.g. reasoning model token limits or grammar mismatch), retry once without response_format
+            err_str = str(exc).lower()
+            if "json_validate_failed" in err_str or "validate json" in err_str or "failed to generate json" in err_str:
+                logger.warning(
+                    "llm.groq.json_mode_retry",
+                    extra={"model": self._model, "error": str(exc)},
+                )
+                try:
+                    raw_response = await _call_api(use_json_mode=False)
+                except Exception as retry_exc:
+                    logger.error(
+                        "llm.groq.api_error_retry",
+                        extra={"model": self._model, "error": str(retry_exc)},
+                        exc_info=retry_exc,
+                    )
+                    return LLMResponse.error()
+            else:
+                logger.error(
+                    "llm.groq.api_error",
+                    extra={"model": self._model, "error": str(exc)},
+                    exc_info=exc,
+                )
+                return LLMResponse.error()
 
         raw_content = raw_response.choices[0].message.content or ""
 
