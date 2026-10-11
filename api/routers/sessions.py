@@ -28,12 +28,15 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 import redis.asyncio as aioredis
 
 from api.dependencies import get_current_user, get_db, get_redis
 from api.models.player import Player
+from api.models.session import Session, SessionPlayer
 from api.schemas.session import (
     SessionCreate,
     SessionPlayerResponse,
@@ -74,6 +77,36 @@ async def create_session(
     - Publishes `session.created` to the Redis pub/sub channel.
     """
     return await session_service.create_session(payload, current_user, db, redis)
+
+
+# ── GET /sessions & /sessions/list ───────────────────────────────────────────
+
+@router.get(
+    "",
+    response_model=list[SessionResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List all game sessions",
+)
+@router.get(
+    "/list",
+    response_model=list[SessionResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List all game sessions (alias)",
+)
+async def list_sessions(
+    db: AsyncSession = Depends(get_db),
+) -> list[SessionResponse]:
+    """Return all recent game sessions for the dashboard."""
+    result = await db.execute(
+        select(Session)
+        .options(
+            selectinload(Session.session_players).selectinload(SessionPlayer.player)
+        )
+        .order_by(Session.created_at.desc())
+        .limit(50)
+    )
+    sessions = result.scalars().all()
+    return [session_service._build_session_response(s) for s in sessions]
 
 
 # ── POST /sessions/join/{join_code} ───────────────────────────────────────────
