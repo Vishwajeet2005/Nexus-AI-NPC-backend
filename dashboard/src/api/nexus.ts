@@ -10,8 +10,13 @@
 const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "http://localhost:8000";
 const V1 = `${BASE}/v1`;
 
-let _token: string | null = null;
-export function setToken(token: string) { _token = token; }
+let _token: string | null = typeof window !== "undefined" ? localStorage.getItem("nexus_token") : null;
+export function setToken(token: string) {
+  _token = token;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("nexus_token", token);
+  }
+}
 export function getToken() { return _token; }
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
