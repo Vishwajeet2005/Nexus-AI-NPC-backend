@@ -305,16 +305,30 @@ async def interact(
             secrets=updated_secrets,
             current_stress=effective_stress,
         )
-        if validated_secret:
-            updated_secrets = [
-                NPCSecret(**{**s.model_dump(), "is_revealed": True})
-                if s.id == validated_secret else s
-                for s in updated_secrets
-            ]
-            logger.info(
-                "npc.secret_revealed",
-                extra={"npc_id": str(npc_id), "secret_id": validated_secret, "stress": effective_stress},
-            )
+
+    # Content-based detection safeguard if LLM confessed in dialogue text but omitted the JSON key
+    if not validated_secret:
+        resp_lower = (llm_response.npc_response or "").lower()
+        for s in updated_secrets:
+            if s.is_revealed or effective_stress < s.reveal_threshold:
+                continue
+            if s.id == "alibi_weakness" and ("10:15" in resp_lower or "22:15" in resp_lower or ("gap" in resp_lower and "residence" in resp_lower)):
+                validated_secret = s.id
+                break
+            elif s.id == "brothers_involvement" and ("danny" in resp_lower or ("brother" in resp_lower and ("money" in resp_lower or "ledger" in resp_lower))):
+                validated_secret = s.id
+                break
+
+    if validated_secret:
+        updated_secrets = [
+            NPCSecret(**{**s.model_dump(), "is_revealed": True})
+            if s.id == validated_secret else s
+            for s in updated_secrets
+        ]
+        logger.info(
+            "npc.secret_revealed",
+            extra={"npc_id": str(npc_id), "secret_id": validated_secret, "stress": effective_stress},
+        )
 
     # Steps 10-11: Write Postgres
     interaction_row = await memory_service.write_interaction(

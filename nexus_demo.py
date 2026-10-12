@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Nexus terminal demo: interrogate Marcus Webb and watch his "mind" move.
+"""Nexus terminal demo: interrogate Marcus Webb and watch his mind move.
 
 Run from the repo root with the Nexus stack up (docker compose up -d):
 
@@ -32,11 +32,28 @@ if sys.platform == "win32":
 
 from nexus_py import NexusClient
 
-# Load photorealistic TrueColor ASCII portraits and smooth emotion morphing
+# Load photorealistic fine ASCII portraits and smooth Bayer dithering morph engine
 try:
-    from api.data.portraits.ascii_cache import PORTRAITS, show_portrait, morph_portrait, set_portrait_style
+    from api.data.portraits.ascii_cache import (
+        PORTRAITS,
+        get_portrait_lines,
+        get_morph_frames,
+        render_ascii_lines,
+        show_portrait,
+        morph_portrait,
+        set_portrait_style,
+    )
 except Exception:
     PORTRAITS = {}
+
+    def get_portrait_lines(behaviour):
+        return []
+
+    def get_morph_frames(from_b, to_b, frames=10):
+        return []
+
+    def render_ascii_lines(grid):
+        return []
 
     def show_portrait(behaviour):
         pass
@@ -62,7 +79,7 @@ SCRIPTED_LINES = [
 
 # ---------------------------------------------------------------- styling
 if os.name == "nt":
-    os.system("")  # switches on ANSI colours in older Windows consoles
+    os.system("")  # switches on ANSI colours in Windows consoles
 
 RESET, BOLD, DIM = "\033[0m", "\033[1m", "\033[2m"
 RED, GREEN, YELLOW, MAGENTA, CYAN, WHITE = (f"\033[{c}m" for c in (91, 92, 93, 95, 96, 97))
@@ -81,8 +98,7 @@ STATE_ROWS = [("Stress", "stress", True), ("Trust", "trust", False), ("Suspicion
 
 # ---------------------------------------------------------------- helpers
 def val(obj, key, default=0.0):
-    """Read a field from a dict or a Pydantic model (the SDK docstring and
-    the quickstart disagree about which one emotional_state is, so handle both)."""
+    """Read a field from a dict or a Pydantic model."""
     if obj is None:
         return default
     if isinstance(obj, dict):
@@ -100,10 +116,10 @@ def as_dict(obj):
     return dict(vars(obj))
 
 
-def bar(value, width=20, high_is_bad=True):
+def bar(value, width=14, high_is_bad=True):
     v = max(0.0, min(1.0, float(value)))
     filled = round(v * width)
-    danger = v if high_is_bad else 1 - v
+    danger = v if high_is_bad else 1.0 - v
     colour = GREEN if danger < 0.4 else YELLOW if danger < 0.7 else RED
     return f"{colour}{'█' * filled}{DIM}{'░' * (width - filled)}{RESET}"
 
@@ -113,9 +129,8 @@ def behaviour_badge(behaviour):
     return f"{BOLD}{BEHAVIOUR_COLOURS.get(name, WHITE)}[ {name.upper()} ]{RESET}"
 
 
-
 def say(who, text):
-    """Print a reply wrapped to the terminal width (good for split-screen recording)."""
+    """Print a reply wrapped to the terminal width."""
     width = max(40, shutil.get_terminal_size((100, 20)).columns - 2)
     prefix = f"{who}: "
     wrapped = textwrap.fill(text, width=width, initial_indent=prefix, subsequent_indent=" " * len(prefix))
@@ -127,6 +142,89 @@ def show_state(state, delta):
     for label, key, high_is_bad in STATE_ROWS:
         if key in now:
             print(f"  {label:<10}{bar(now[key], high_is_bad=high_is_bad)} {now[key]:.2f}  ({change.get(key, 0.0):+.2f})")
+
+
+def render_hud(face_lines, behaviour, state, delta, history, latency=None, secret=None, status_msg=None):
+    """Render the single unified HUD layout with persistent face on left and live metrics + transcript on right."""
+    term_w = shutil.get_terminal_size((100, 30)).columns
+    face_w = 46
+    b_name = str(getattr(behaviour, "value", behaviour)).lower()
+    b_color = BEHAVIOUR_COLOURS.get(b_name, WHITE)
+    badge = f"{BOLD}{b_color}[ {b_name.upper()} ]{RESET}"
+
+    if term_w >= 92:
+        right_w = max(42, term_w - face_w - 4)
+        r_lines = []
+        r_lines.append(f"{BOLD}NEXUS INTERROGATION ROOM: MARCUS WEBB{RESET}")
+        lat_str = f" {DIM}({latency:.2f}s){RESET}" if latency is not None else ""
+        stat_line = f"Status: {badge}{lat_str}"
+        if status_msg:
+            stat_line += f"  {DIM}{status_msg}{RESET}"
+        r_lines.append(stat_line)
+        r_lines.append(f"{DIM}{'─' * (right_w - 2)}{RESET}")
+
+        # Live emotional state bars
+        st = as_dict(state)
+        dt = as_dict(delta)
+        for label, key, high_is_bad in STATE_ROWS:
+            if key in st:
+                d_val = dt.get(key, 0.0)
+                d_str = f"({d_val:+.2f})" if d_val != 0.0 else "      "
+                r_lines.append(f"{label:<10} {bar(st[key], width=12, high_is_bad=high_is_bad)} {st[key]:.2f} {d_str}")
+
+        if secret:
+            r_lines.append(f"{BOLD}{RED}🚨 CRACKED: {secret} 🚨{RESET}")
+        else:
+            r_lines.append(f"{DIM}{'─' * (right_w - 2)}{RESET}")
+
+        r_lines.append(f"{BOLD}TRANSCRIPT:{RESET}")
+
+        # Wrap dialogue entries cleanly into right pane
+        avail_rows = max(4, 25 - len(r_lines))
+        wrapped_entries = []
+        for speaker, text in history:
+            color = CYAN if speaker.lower() == "player" else WHITE
+            prefix = f"{BOLD}{color}{speaker}:{RESET} "
+            indent = " " * (len(speaker) + 2)
+            w_text = textwrap.fill(text, width=right_w - 2, initial_indent=prefix, subsequent_indent=indent)
+            for l in w_text.split("\n"):
+                wrapped_entries.append(l)
+            wrapped_entries.append("")  # spacer between turns
+
+        if len(wrapped_entries) > avail_rows:
+            wrapped_entries = wrapped_entries[-avail_rows:]
+        r_lines.extend(wrapped_entries)
+
+        # Pad to match face height (26 rows)
+        while len(r_lines) < len(face_lines):
+            r_lines.append("")
+
+        combined = []
+        for i in range(len(face_lines)):
+            f_l = face_lines[i]
+            r_l = r_lines[i] if i < len(r_lines) else ""
+            combined.append(f"{f_l} {DIM}│{RESET} {r_l}")
+
+        return "\n".join(combined)
+    else:
+        # Stacked layout for narrower terminals
+        out = []
+        out.append(f"{BOLD}NEXUS INTERROGATION: MARCUS WEBB  {badge}{RESET}")
+        out.append("\n".join(face_lines))
+        st = as_dict(state)
+        dt = as_dict(delta)
+        for label, key, high_is_bad in STATE_ROWS:
+            if key in st:
+                d_val = dt.get(key, 0.0)
+                d_str = f"({d_val:+.2f})" if d_val != 0.0 else "      "
+                out.append(f"  {label:<10} {bar(st[key], width=12, high_is_bad=high_is_bad)} {st[key]:.2f} {d_str}")
+        if secret:
+            out.append(f"  {BOLD}{RED}🚨 CRACKED: {secret} 🚨{RESET}")
+        out.append(f"{DIM}{'─' * 50}{RESET}")
+        for speaker, text in history[-3:]:
+            color = CYAN if speaker.lower() == "player" else WHITE
+            out.append(f"  {BOLD}{color}{speaker}:{RESET} {text}")
+        return "\n".join(out)
 
 
 async def type_out(text, delay):
@@ -145,7 +243,7 @@ def pct(values, p):
 def load_profile(path, threshold):
     p = Path(path)
     if not p.exists():
-        sys.exit(f"Profile not found: {p}\nRun from the repo root, or pass --profile <path to marcus_webb.json>.")
+        sys.exit(f"Profile not found: {p}\nRun from repo root, or pass --profile <path>.")
     payload = json.loads(p.read_text(encoding="utf-8"))
     if threshold is not None:
         for secret in payload.get("secrets", []):
@@ -156,8 +254,6 @@ def load_profile(path, threshold):
 
 
 async def create_npc(client, payload, session):
-    """Spawn Marcus inside the session. Tries with session_id first; if the
-    backend rejects it, retries with the bare profile."""
     body = dict(payload)
     session_id = val(session, "id", None)
     if session_id:
@@ -167,7 +263,6 @@ async def create_npc(client, payload, session):
     except Exception as err:
         if "session_id" not in body:
             raise
-        print(f"{DIM}(create with session_id failed: {err}; retrying without it){RESET}")
         body.pop("session_id")
         return await client.npcs.create(body)
 
@@ -198,45 +293,65 @@ def print_summary(turns, cracked_at, latencies, log_path):
 
 # ---------------------------------------------------------------- the demo
 async def run(args):
-    set_portrait_style(getattr(args, "style", "halfblock"))
+    set_portrait_style(getattr(args, "style", "ascii"))
     payload = load_profile(args.profile, args.threshold)
     log_path = Path(f"demo_run_{datetime.now():%Y%m%d_%H%M%S}.jsonl")
     scripted = iter(SCRIPTED_LINES) if args.auto else None
     latencies, turns, cracked_at = [], 0, None
+    secret_cracked = None
 
     async with NexusClient(host=args.host) as client:
         await client.auth.login_guest()
         session = await client.sessions.create(game_id=GAME_ID)
         npc = await create_npc(client, payload, session)
         npc_id = val(npc, "id", None)
-        name = val(npc, "name", None) or payload.get("name") or "NPC"
+        name = val(npc, "name", None) or payload.get("name") or "Marcus"
 
-        print(f"\n{BOLD}--- INTERROGATION: {name} ---{RESET}")
         previous_behaviour = "cooperative"
+        curr_state = {"stress": 0.20, "trust": 0.50, "suspicion": 0.25}
+        curr_delta = {"stress": 0.0, "trust": 0.0, "suspicion": 0.0}
+        history = []
+
+        # Clear screen and draw initial persistent HUD
         if not args.no_face:
-            show_portrait(previous_behaviour)
+            sys.stdout.write("\033[2J\033[H")
+            face_lines = get_portrait_lines(previous_behaviour)
+            hud = render_hud(face_lines, previous_behaviour, curr_state, curr_delta, history)
+            sys.stdout.write(hud + "\n\n")
+            sys.stdout.flush()
+        else:
+            print(f"\n{BOLD}--- INTERROGATION: {name} ---{RESET}")
+
         if args.auto:
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(1.0)
 
         while True:
-            # 1) the player's line
+            # 1) Player's line
+            prompt_line = f"{BOLD}{CYAN}Player:{RESET} "
             if args.auto:
                 line = next(scripted, None)
                 if line is None:
                     break
-                sys.stdout.write(f"\n{BOLD}Player:{RESET} ")
+                sys.stdout.write(f"\r\033[K{prompt_line}")
                 sys.stdout.flush()
                 await type_out(line, args.type_delay)
             else:
-                line = (await asyncio.to_thread(input, f"\n{BOLD}Player:{RESET} ")).strip()
+                line = (await asyncio.to_thread(input, f"\r\033[K{prompt_line}")).strip()
                 if line.lower() in ("quit", "exit"):
                     break
                 if not line:
                     continue
 
-            # 2) ask the NPC (timed, so the run doubles as a latency measurement)
-            sys.stdout.write(f"{DIM}  ...{RESET}")
-            sys.stdout.flush()
+            # 2) Live thinking status on the single persistent HUD
+            if not args.no_face:
+                face_lines = get_portrait_lines(previous_behaviour)
+                hud = render_hud(face_lines, previous_behaviour, curr_state, curr_delta, history, secret=secret_cracked, status_msg="thinking...")
+                sys.stdout.write("\033[H" + hud + "\n\n")
+                sys.stdout.flush()
+            else:
+                sys.stdout.write(f"{DIM}  ...{RESET}")
+                sys.stdout.flush()
+
             started = time.perf_counter()
             try:
                 res = await client.npcs.interact(npc_id, line)
@@ -244,44 +359,68 @@ async def run(args):
                 print(f"\r\033[K{RED}  Error: {err}{RESET}")
                 continue
             latency = time.perf_counter() - started
-            sys.stdout.write("\r\033[K")
 
-            # 3) show what the audience should see
+            # 3) Process backend response
             turns += 1
             latencies.append(latency)
             curr_behaviour = str(getattr(res.behaviour, "value", res.behaviour)).lower()
-            if not args.no_face:
-                if previous_behaviour and previous_behaviour != curr_behaviour:
-                    await morph_portrait(previous_behaviour, curr_behaviour, frames=args.morph_frames, delay=args.morph_delay)
-                else:
-                    show_portrait(curr_behaviour)
-            previous_behaviour = curr_behaviour
-            say(name, res.npc_response)
-            print(f"  {behaviour_badge(res.behaviour)}  {DIM}{latency:.1f}s{RESET}")
-            show_state(res.emotional_state, res.state_delta)
+            curr_state = res.emotional_state
+            curr_delta = res.state_delta
             if res.secret_leaked:
                 cracked_at = cracked_at or turns
-                print(f"\n  {BOLD}{RED}!!  SECRET CRACKED: {res.secret_leaked}  !!{RESET}")
+                secret_cracked = res.secret_leaked
+
+            # 4) If emotion changed, smoothly morph the single face in place!
+            if not args.no_face:
+                if previous_behaviour and previous_behaviour != curr_behaviour:
+                    for frame_grid in get_morph_frames(previous_behaviour, curr_behaviour, frames=args.morph_frames):
+                        frame_lines = render_ascii_lines(frame_grid)
+                        hud = render_hud(frame_lines, curr_behaviour, curr_state, curr_delta, history, latency=latency, secret=secret_cracked)
+                        sys.stdout.write("\033[H" + hud + "\n")
+                        sys.stdout.flush()
+                        await asyncio.sleep(args.morph_delay)
+
+                # Add new conversation turn to history
+                history.append(("Player", line))
+                history.append((name, res.npc_response))
+                previous_behaviour = curr_behaviour
+
+                # Redraw persistent HUD with updated transcript
+                hud = render_hud(get_portrait_lines(curr_behaviour), curr_behaviour, curr_state, curr_delta, history, latency=latency, secret=secret_cracked)
+                sys.stdout.write("\033[H" + hud + "\n\n")
+                sys.stdout.flush()
+            else:
+                sys.stdout.write("\r\033[K")
+                say("Player", line)
+                say(name, res.npc_response)
+                print(f"  {behaviour_badge(res.behaviour)}  {DIM}{latency:.1f}s{RESET}")
+                show_state(curr_state, curr_delta)
+                if res.secret_leaked:
+                    print(f"\n  {BOLD}{RED}!!  SECRET CRACKED: {res.secret_leaked}  !!{RESET}")
+
             log_turn(log_path, turns, line, res, latency)
 
             if args.auto:
                 await asyncio.sleep(args.pause)
 
+    if not args.no_face:
+        # Move cursor to end of screen after interrogation finishes
+        sys.stdout.write("\n" * 2)
     print_summary(turns, cracked_at, latencies, log_path)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Nexus terminal demo: interrogate Marcus Webb.")
     parser.add_argument("--host", default="localhost:8000", help="Nexus API host:port (default: localhost:8000)")
-    parser.add_argument("--profile", default="api/data/npcs/marcus_webb.json", help="path to the NPC profile JSON")
-    parser.add_argument("--auto", action="store_true", help="type the scripted lines automatically")
+    parser.add_argument("--profile", default="api/data/npcs/marcus_webb.json", help="path to NPC profile JSON")
+    parser.add_argument("--auto", action="store_true", help="type scripted lines automatically")
     parser.add_argument("--no-face", action="store_true", help="disable detailed ASCII portrait rendering")
     parser.add_argument("--morph-frames", type=int, default=10, help="frames for emotional morph transitions (default: 10)")
     parser.add_argument("--morph-delay", type=float, default=0.035, help="seconds per morph transition frame (default: 0.035)")
-    parser.add_argument("--threshold", type=float, help="override every secret's reveal_threshold (demo pacing)")
-    parser.add_argument("--style", choices=["halfblock", "ascii"], default="halfblock", help="face portrait style: 'halfblock' (default, compact micro-character ▀) or 'ascii' (classic characters)")
+    parser.add_argument("--threshold", type=float, help="override reveal_threshold for secrets (demo pacing)")
+    parser.add_argument("--style", default="ascii", help="portrait style ('ascii')")
     parser.add_argument("--pause", type=float, default=2.5, help="seconds to linger on each reply in --auto mode")
-    parser.add_argument("--type-delay", type=float, default=0.035, help="seconds per typed character in --auto mode")
+    parser.add_argument("--type-delay", type=float, default=0.03, help="seconds per typed character in --auto mode")
     args = parser.parse_args()
     try:
         asyncio.run(run(args))

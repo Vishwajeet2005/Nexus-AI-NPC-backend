@@ -8,74 +8,84 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-# Normalized face bounding boxes per emotion (1024x1024 coordinates)
+# Normalized facial expression crops per emotion (1024x1024 coordinates)
 CROPS = {
-    "cooperative": (370, 190, 630, 510),  # 260x320
-    "deflecting":  (270, 70,  830, 730),  # 560x660
-    "nervous":     (330, 100, 670, 520),  # 340x420
-    "hostile":     (240, 80,  820, 760),  # 580x680
-    "confessing":  (210, 130, 730, 690),  # 520x560
+    "cooperative": (340, 180, 660, 520),  # 320x340
+    "deflecting":  (250, 70,  810, 730),  # 560x660
+    "nervous":     (310, 90,  690, 530),  # 380x440
+    "hostile":     (220, 80,  820, 760),  # 600x680
+    "confessing":  (200, 120, 740, 700),  # 540x580
 }
 
-ASCII_CHARS = " .:-=+*#%@"
+# Rich typography ASCII ramp from dense/opaque to sparse/empty
+ASCII_CHARS = "@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
 
 
 def crop_and_enhance_face(img: Image.Image, emotion: str) -> Image.Image:
     """Extract tight facial expression bounding box and enhance facial contours."""
     box = CROPS.get(emotion, (250, 150, 750, 700))
-    cropped = img.crop(box)
+    face = img.crop(box)
     
     # Lighting and facial detail enhancement:
     # 1. Lift shadows so eyes, pupils, lips and expression are clearly visible
-    brightener = ImageEnhance.Brightness(cropped)
+    brightener = ImageEnhance.Brightness(face)
     enhanced = brightener.enhance(1.18)
     # 2. Boost contrast so facial contours, wrinkles and sweat stand out
     contrast = ImageEnhance.Contrast(enhanced)
-    enhanced = contrast.enhance(1.22)
-    # 3. Enhance sharpness for crisp edges
+    enhanced = contrast.enhance(1.25)
+    # 3. Enhance sharpness for crisp typography edges
     sharpener = ImageEnhance.Sharpness(enhanced)
     enhanced = sharpener.enhance(1.4)
     return enhanced
 
 
-def convert_face_to_halfblocks(image_path: str, emotion: str = "cooperative", width: int = 38, height_px: int = 38) -> list:
-    """Convert portrait image to a 2D grid of TrueColor half-blocks (rt, gt, bt, rb, gb, bb)."""
+def convert_face_to_ascii_grid(image_path: str, emotion: str = "cooperative", width: int = 46) -> list:
+    """Convert portrait image to a 2D grid of (r, g, b, char) tuples."""
     img = Image.open(image_path)
     face = crop_and_enhance_face(img, emotion)
-    resized = face.resize((width, height_px), Image.Resampling.LANCZOS).convert("RGB")
     
-    terminal_rows = height_px // 2
-    grid = []
-    for row in range(terminal_rows):
-        y_top = row * 2
-        y_bot = y_top + 1
-        row_cells = []
-        for x in range(width):
-            rt, gt, bt = resized.getpixel((x, y_top))
-            rb, gb, bb = resized.getpixel((x, y_bot))
-            row_cells.append((rt, gt, bt, rb, gb, bb))
-        grid.append(row_cells)
-    return grid
-
-
-def convert_face_to_ascii(image_path: str, emotion: str = "cooperative", width: int = 36, height: int = 18) -> str:
-    """Convert portrait image to high-contrast compact ASCII characters."""
-    img = Image.open(image_path)
-    face = crop_and_enhance_face(img, emotion)
+    char_aspect = 0.48
+    aspect = face.height / face.width
+    height = int(width * aspect * char_aspect)
+    
     resized = face.resize((width, height), Image.Resampling.LANCZOS).convert("RGB")
-    
-    lines = []
     ramp_len = len(ASCII_CHARS)
+    grid = []
+    
     for y in range(height):
         row = []
         for x in range(width):
             r, g, b = resized.getpixel((x, y))
             lum = int(0.299 * r + 0.587 * g + 0.114 * b)
-            idx = int((lum / 255.0) * (ramp_len - 1))
+            norm_lum = lum / 255.0
+            idx = int((1.0 - norm_lum) * (ramp_len - 1))
+            idx = max(0, min(ramp_len - 1, idx))
             char = ASCII_CHARS[idx]
-            row.append(f"\033[38;2;{r};{g};{b}m{char}")
-        lines.append("".join(row) + "\033[0m")
+            if lum < 15:
+                char = " "
+            row.append((r, g, b, char))
+        grid.append(row)
+    return grid
+
+
+def render_ascii_grid(grid: list) -> str:
+    """Format a 2D grid of (r, g, b, char) tuples into ANSI TrueColor escape strings."""
+    lines = []
+    for row in grid:
+        row_chars = []
+        for r, g, b, c in row:
+            if c == " ":
+                row_chars.append(" ")
+            else:
+                row_chars.append(f"\033[38;2;{r};{g};{b}m{c}")
+        lines.append("".join(row_chars) + "\033[0m")
     return "\n".join(lines)
+
+
+def convert_face_to_ascii(image_path: str, emotion: str = "cooperative", width: int = 46) -> str:
+    """Convert portrait image to fine-grained TrueColor ASCII text."""
+    grid = convert_face_to_ascii_grid(image_path, emotion, width)
+    return render_ascii_grid(grid)
 
 
 if __name__ == "__main__":
