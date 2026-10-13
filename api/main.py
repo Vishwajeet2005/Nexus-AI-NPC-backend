@@ -31,6 +31,7 @@ from typing import Any, AsyncGenerator, Callable
 from fastapi import FastAPI, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
@@ -142,6 +143,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
     init_db(engine)
     logger.info("nexus.db_ready", extra={"url": settings.database_url.split("@")[-1]})
+
+    # Ensure demo game exists for interrogation demos
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(
+                text(
+                    "INSERT INTO games (id, name, api_key, config) "
+                    "VALUES ('8cc751bb-10fc-4a4d-ab96-b0872e97d462', 'Nexus Demo Interrogation', 'demo_key_marcus_webb', '{}') "
+                    "ON CONFLICT (id) DO NOTHING;"
+                )
+            )
+    except Exception as exc:
+        logger.warning("nexus.demo_game_seed_failed", extra={"error": str(exc)})
 
     # Redis connection pool
     redis_client: aioredis.Redis = aioredis.from_url(
