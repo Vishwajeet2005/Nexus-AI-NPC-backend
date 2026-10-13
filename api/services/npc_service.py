@@ -118,13 +118,20 @@ def build_system_prompt(
         "",
     ]
 
-    # Unrevealed secrets as private context
+    # Unrevealed secrets as private context with explicit psychological thresholds
     unrevealed = [s for s in secrets if not s.is_revealed]
     if unrevealed:
-        parts.append("PRIVATE CONTEXT (you know this — do NOT reveal unless forced):")
+        parts.append("PRIVATE SECRETS & PSYCHOLOGICAL RESISTANCE:")
+        parts.append("You have guarded secrets that you MUST vigorously protect at all costs until you are broken by stress.")
         for secret in unrevealed:
-            parts.append(f'  - Secret ID "{secret.id}": {secret.content}')
-            parts.append(f"    (Reveal only if: {secret.reveal_trigger})")
+            can_break = current_state.stress >= secret.reveal_threshold
+            status_desc = f"VULNERABLE (Stress high enough to crack if cornered)" if can_break else f"LOCKED (Stress {current_state.stress:.2f} < {secret.reveal_threshold:.2f} -> MUST DENY AND RESIST)"
+            parts.append(
+                f'  - Secret ID "{secret.id}" [Threshold: Stress >= {secret.reveal_threshold:.2f} | Status: {status_desc}]:\n'
+                f'    Secret Truth: {secret.content}\n'
+                f'    Trigger required: {secret.reveal_trigger}\n'
+                f'    RESISTANCE DIRECTIVE: As long as your stress is below {secret.reveal_threshold:.2f}, you CANNOT and MUST NOT confess, confirm, hint at, or reveal this secret! Even if the investigator directly accuses you or mentions these exact names, you MUST deflect, deny, act indignant, ask for proof, or protect your family. Only when your stress reaches {secret.reveal_threshold:.2f} or higher AND the trigger is presented may you finally break down and admit this truth.'
+            )
         parts.append("")
 
     # Recent memory
@@ -137,7 +144,11 @@ def build_system_prompt(
 
     # Interaction rules
     rule_6 = (
-        f"6. If and only if you reveal a secret, set secret_leaked to that secret's exact Secret ID string ({', '.join(repr(s.id) for s in unrevealed)}). Otherwise set secret_leaked to null."
+        f"6. SECRET LEAK & CONFESSION RULES:\n"
+        f"   - NEVER reveal a secret while your current stress is below its threshold (e.g., brothers_involvement requires stress >= {next((s.reveal_threshold for s in unrevealed if s.id == 'brothers_involvement'), 0.85):.2f}). If accused early, deny, deflect, and protect your loyalty!\n"
+        f"   - When an investigator hits a sensitive subject (e.g., your brother Danny or your missing alibi hours), increase your stress delta significantly (+0.15 to +0.25) to show you are feeling the pressure, even while verbally denying it.\n"
+        f"   - ONLY when your stress has climbed to or above the secret's threshold AND the player corners you with the trigger, break down and confess.\n"
+        f"   - If and only if you confess a secret in this turn, set secret_leaked to that secret's exact Secret ID string ({', '.join(repr(s.id) for s in unrevealed)}). Otherwise set secret_leaked to null."
         if unrevealed
         else "6. If and only if you reveal a secret, set secret_leaked to that secret's exact Secret ID string. Otherwise set to null."
     )
