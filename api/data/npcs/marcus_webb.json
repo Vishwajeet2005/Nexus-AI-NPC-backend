@@ -11,7 +11,45 @@
       "deflecting": "Answers a question with a question. Refers to his alibi unprompted.",
       "nervous": "Uses filler phrases like 'as I said' and 'I already told you'. Blinks more.",
       "hostile": "Crosses arms. Goes completely monosyllabic. Requests a lawyer."
+    },
+    "scenario": {
+      "case_number": "CASE-2026-8841",
+      "title": "The North Wharves Warehouse Embezzlement",
+      "location": "Precinct 12 — Interrogation Room 3",
+      "suspect": "Marcus Webb (Senior Accountant, Meridian Logistics)",
+      "summary": "At approximately 11:45 PM on Friday night, $420,000 in cash was illicitly removed from the North Wharves vault. A company transport vehicle was logged leaving the facility minutes later. A forensic accounting audit uncovered that two ledger entries were altered early Saturday morning to conceal the transaction.",
+      "suspect_alibi": "Marcus claims he spent the entire night having drinks alone at The Anchor bar until midnight, paying cash.",
+      "known_leads": [
+        "The Anchor Bar: Staff confirmed Marcus paid cash and left at 10:15 PM — leaving a critical 105-minute unaccounted gap.",
+        "CCTV Surveillance: Traffic camera captured Marcus's dark sedan three blocks from the warehouse at 11:42 PM.",
+        "Digital Ledger Discrepancy: Two accounting ledger records were altered post-theft using credentials tied to Marcus.",
+        "Danny Webb: Marcus's younger brother was scheduled as night warehouse logistics transport driver."
+      ],
+      "objectives": [
+        "Confront Marcus on the 105-minute gap in his Anchor bar alibi.",
+        "Present the CCTV footage placing his car near the warehouse.",
+        "Break his psychological resistance to expose his brother Danny's role and obtain a full confession."
+      ]
     }
+  },
+  "scenario": {
+    "case_number": "CASE-2026-8841",
+    "title": "The North Wharves Warehouse Embezzlement",
+    "location": "Precinct 12 — Interrogation Room 3",
+    "suspect": "Marcus Webb (Senior Accountant, Meridian Logistics)",
+    "summary": "At approximately 11:45 PM on Friday night, $420,000 in cash was illicitly removed from the North Wharves vault. A company transport vehicle was logged leaving the facility minutes later. A forensic accounting audit uncovered that two ledger entries were altered early Saturday morning to conceal the transaction.",
+    "suspect_alibi": "Marcus claims he spent the entire night having drinks alone at The Anchor bar until midnight, paying cash.",
+    "known_leads": [
+      "The Anchor Bar: Staff confirmed Marcus paid cash and left at 10:15 PM — leaving a critical 105-minute unaccounted gap.",
+      "CCTV Surveillance: Traffic camera captured Marcus's dark sedan three blocks from the warehouse at 11:42 PM.",
+      "Digital Ledger Discrepancy: Two accounting ledger records were altered post-theft using credentials tied to Marcus.",
+      "Danny Webb: Marcus's younger brother was scheduled as night warehouse logistics transport driver."
+    ],
+    "objectives": [
+      "Confront Marcus on the 105-minute gap in his Anchor bar alibi.",
+      "Present the CCTV footage placing his car near the warehouse.",
+      "Break his psychological resistance to expose his brother Danny's role and obtain a full confession."
+    ]
   },
   "secrets": [
     {

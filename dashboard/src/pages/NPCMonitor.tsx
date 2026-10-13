@@ -158,6 +158,71 @@ export default function NPCMonitor() {
                 </div>
               </div>
 
+              {npc.personality?.scenario && (
+                <div className="card p-4 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xs font-mono font-bold tracking-wider px-2 py-0.5 rounded bg-blue/10 text-blue border border-blue/20">
+                        {npc.personality.scenario.case_number || "DOSSIER"}
+                      </span>
+                      <p className="text-xs font-semibold text-ink">{npc.personality.scenario.title || "Case Incident"}</p>
+                    </div>
+                    {npc.personality.scenario.location && (
+                      <span className="text-2xs text-ink-3 font-mono truncate max-w-[180px]">{npc.personality.scenario.location}</span>
+                    )}
+                  </div>
+
+                  {npc.personality.scenario.summary && (
+                    <div>
+                      <p className="text-2xs uppercase tracking-wider font-semibold text-ink-3 mb-1">Incident Overview</p>
+                      <p className="text-xs text-ink-2 leading-relaxed bg-raised/50 p-2.5 rounded border border-border">
+                        {npc.personality.scenario.summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {npc.personality.scenario.suspect_alibi && (
+                    <div className="p-2.5 rounded bg-yellow/10 border border-yellow/20">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow" />
+                        <p className="text-2xs uppercase tracking-wider font-semibold text-yellow">Suspect Claimed Alibi</p>
+                      </div>
+                      <p className="text-xs text-ink-2 italic leading-relaxed">
+                        "{npc.personality.scenario.suspect_alibi}"
+                      </p>
+                    </div>
+                  )}
+
+                  {npc.personality.scenario.known_leads && npc.personality.scenario.known_leads.length > 0 && (
+                    <div>
+                      <p className="text-2xs uppercase tracking-wider font-semibold text-ink-3 mb-1.5">Forensic Leads & Evidence</p>
+                      <ul className="space-y-1.5">
+                        {npc.personality.scenario.known_leads.map((lead, idx) => (
+                          <li key={idx} className="text-xs text-ink-2 flex items-start gap-2 bg-raised/40 p-2 rounded border border-border/40">
+                            <span className="text-blue font-mono font-bold text-2xs mt-0.5">•</span>
+                            <span className="leading-snug">{lead}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {npc.personality.scenario.objectives && npc.personality.scenario.objectives.length > 0 && (
+                    <div>
+                      <p className="text-2xs uppercase tracking-wider font-semibold text-ink-3 mb-1">Investigation Objectives</p>
+                      <ul className="space-y-1">
+                        {npc.personality.scenario.objectives.map((obj, idx) => (
+                          <li key={idx} className="text-xs text-ink-2 flex items-start gap-1.5">
+                            <span className="text-green font-bold text-2xs mt-0.5">✓</span>
+                            <span className="leading-snug">{obj}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {lastNpcUpdate?.secret_leaked && (
                 <div className="card p-3 border-red/25 bg-red/5">
                   <p className="text-xs text-red font-medium">Secret revealed</p>

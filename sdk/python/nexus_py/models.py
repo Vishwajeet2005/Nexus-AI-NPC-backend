@@ -105,6 +105,21 @@ class NPCEmotionalState(BaseModel):
     cooperation: float = 0.6
 
 
+class NPCScenario(BaseModel):
+    """Case dossier and investigation scenario context."""
+
+    model_config = ConfigDict(frozen=True)
+
+    case_number: str = ""
+    title: str = ""
+    location: str = ""
+    suspect: str = ""
+    summary: str = ""
+    suspect_alibi: str = ""
+    known_leads: list[str] = Field(default_factory=list)
+    objectives: list[str] = Field(default_factory=list)
+
+
 class NPCResponse(BaseModel):
     """Public NPC representation. Secrets are never included."""
 

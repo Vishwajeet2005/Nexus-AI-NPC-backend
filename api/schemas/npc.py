@@ -89,6 +89,46 @@ class NPCTell(BaseModel):
     )
 
 
+class NPCScenario(BaseModel):
+    """
+    Scenario briefing and interrogation case context.
+    """
+    model_config = ConfigDict(frozen=True)
+
+    case_number: str = Field(
+        default="CASE-2026-8841",
+        description="Official case or dossier identifier.",
+    )
+    title: str = Field(
+        default="The North Wharves Warehouse Embezzlement",
+        description="Case title or operation name.",
+    )
+    location: str = Field(
+        default="Precinct 12 — Interrogation Room 3",
+        description="Where the interrogation takes place.",
+    )
+    suspect: str = Field(
+        default="Marcus Webb",
+        description="Name and role of the suspect being interrogated.",
+    )
+    summary: str = Field(
+        default="",
+        description="Summary of the incident under investigation.",
+    )
+    suspect_alibi: str = Field(
+        default="",
+        description="The suspect's initial public claim or alibi.",
+    )
+    known_leads: list[str] = Field(
+        default_factory=list,
+        description="Key pieces of evidence and leads available to the interrogator.",
+    )
+    objectives: list[str] = Field(
+        default_factory=list,
+        description="Primary investigation objectives for the interrogator.",
+    )
+
+
 class NPCPersonality(BaseModel):
     """
     Complete personality definition stored in the `npcs.personality` JSONB column.
@@ -124,6 +164,10 @@ class NPCPersonality(BaseModel):
     tells: NPCTell = Field(
         ...,
         description="Per-behaviour stage directions injected into the LLM prompt.",
+    )
+    scenario: Optional[NPCScenario] = Field(
+        default=None,
+        description="Optional case scenario and investigation context.",
     )
 
 

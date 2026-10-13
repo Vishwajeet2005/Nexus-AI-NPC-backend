@@ -384,6 +384,50 @@ def print_summary(turns, cracked_at, latencies, log_path):
     print(f"  Reply time: p50 {pct(latencies, 50):.2f}s   p95 {pct(latencies, 95):.2f}s   (log: {log_path})")
 
 
+def print_case_briefing(payload):
+    scenario = payload.get("scenario") or payload.get("personality", {}).get("scenario")
+    if not scenario:
+        return
+    term_w = min(get_terminal_width(), 84)
+    sep = "═" * (term_w - 2)
+    sub_sep = "─" * (term_w - 2)
+
+    sys.stdout.write("\033[2J\033[H")
+    print(f"{BOLD}{CYAN}╔{sep}╗{RESET}")
+    title = f"METROPOLITAN POLICE — INCIDENT DOSSIER: {scenario.get('case_number', 'CASE FILE')}"
+    print(f"{BOLD}{CYAN}║{title:^{term_w - 2}}║{RESET}")
+    case_title = scenario.get("title", "")
+    print(f"{BOLD}{CYAN}║{case_title:^{term_w - 2}}║{RESET}")
+    print(f"{BOLD}{CYAN}╚{sep}╝{RESET}\n")
+
+    print(f"  {BOLD}SUSPECT:{RESET}  {scenario.get('suspect', payload.get('name', 'Unknown'))}")
+    print(f"  {BOLD}LOCATION:{RESET} {scenario.get('location', 'Interrogation Room')}\n")
+
+    print(f"  {BOLD}{YELLOW}INCIDENT SUMMARY:{RESET}")
+    for line in textwrap.wrap(scenario.get("summary", ""), width=term_w - 6):
+        print(f"    {line}")
+
+    print(f"\n  {BOLD}{YELLOW}SUSPECT'S CLAIM / ALIBI:{RESET}")
+    for line in textwrap.wrap(scenario.get("suspect_alibi", ""), width=term_w - 6):
+        print(f"    {line}")
+
+    leads = scenario.get("known_leads", [])
+    if leads:
+        print(f"\n  {BOLD}{YELLOW}KNOWN EVIDENCE & LEADS:{RESET}")
+        for lead in leads:
+            for l in textwrap.wrap(f"• {lead}", width=term_w - 6, subsequent_indent="      "):
+                print(f"    {l}")
+
+    objectives = scenario.get("objectives", [])
+    if objectives:
+        print(f"\n  {BOLD}{GREEN}INVESTIGATION OBJECTIVES:{RESET}")
+        for obj in objectives:
+            print(f"    {GREEN}✔{RESET} {obj}")
+
+    print(f"\n  {DIM}Tip: You can type /case or /evidence anytime during interrogation to review leads.{RESET}")
+    print(f"  {DIM}{sub_sep}{RESET}")
+
+
 # ---------------------------------------------------------------- the demo
 async def run(args):
     set_portrait_style(getattr(args, "style", "ascii"))
@@ -392,6 +436,15 @@ async def run(args):
     scripted = iter(SCRIPTED_LINES) if args.auto else None
     latencies, turns, cracked_at = [], 0, None
     secret_cracked = None
+
+    # Display scenario case dossier before interrogation starts
+    if not getattr(args, "skip_briefing", False):
+        print_case_briefing(payload)
+        if args.auto:
+            await asyncio.sleep(2.5)
+        else:
+            prompt_start = f"\n  {BOLD}{CYAN}[ Press ENTER to enter the interrogation room ]{RESET} "
+            await asyncio.to_thread(input, prompt_start)
 
     async with NexusClient(host=args.host) as client:
         await client.auth.login_guest()
@@ -449,6 +502,15 @@ async def run(args):
                 line = (await asyncio.to_thread(input)).strip()
                 if line.lower() in ("quit", "exit"):
                     break
+                if line.lower() in ("/case", "/briefing", "/dossier", "/leads", "/evidence", "/help"):
+                    print_case_briefing(payload)
+                    await asyncio.to_thread(input, f"\n  {BOLD}{CYAN}[ Press ENTER to return to interrogation ]{RESET} ")
+                    compact = is_compact_mode()
+                    face_lines = get_portrait_lines(previous_behaviour, compact=compact)
+                    hud = render_hud(face_lines, previous_behaviour, curr_state, curr_delta, history, secret=secret_cracked, compact=compact)
+                    sys.stdout.write("\033[2J\033[H" + hud + "\n\033[J")
+                    sys.stdout.flush()
+                    continue
                 if not line:
                     continue
 
@@ -536,6 +598,7 @@ def main():
     parser.add_argument("--style", default="ascii", help="portrait style ('ascii')")
     parser.add_argument("--pause", type=float, default=2.5, help="seconds to linger on each reply in --auto mode")
     parser.add_argument("--type-delay", type=float, default=0.03, help="seconds per typed character in --auto mode")
+    parser.add_argument("--skip-briefing", action="store_true", help="skip the initial case dossier briefing screen")
     args = parser.parse_args()
     try:
         asyncio.run(run(args))

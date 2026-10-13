@@ -125,10 +125,31 @@ export interface EmotionalState {
   suspicion: number;
   cooperation: number;
 }
+export interface NPCScenario {
+  case_number?: string;
+  title?: string;
+  location?: string;
+  suspect?: string;
+  summary?: string;
+  suspect_alibi?: string;
+  known_leads?: string[];
+  objectives?: string[];
+}
+
+export interface NPCPersonality {
+  traits?: string[];
+  motivation?: string;
+  fear?: string;
+  background?: string;
+  speech_style?: string;
+  scenario?: NPCScenario;
+}
+
 export interface NPC {
   id: string;
   session_id: string;
   name: string;
+  personality?: NPCPersonality;
   current_emotional_state: EmotionalState;
   current_behaviour: NPCBehaviour;
   memory_scope: string;

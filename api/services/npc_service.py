@@ -49,6 +49,7 @@ from api.schemas.npc import (
     NPCMemoryResponse,
     NPCPersonality,
     NPCResponse,
+    NPCScenario,
     NPCSecret,
     NPCMemoryScope,
     NPCStateDelta,
@@ -93,6 +94,25 @@ def build_system_prompt(
         f"BACKGROUND: {personality.background}",
         f"SPEECH STYLE: {personality.speech_style}",
         "",
+    ]
+
+    scenario = getattr(personality, "scenario", None)
+    if not scenario and isinstance(personality, dict):
+        scenario = personality.get("scenario")
+    scenario_dict = scenario.model_dump() if hasattr(scenario, "model_dump") else (scenario if isinstance(scenario, dict) else {})
+    if scenario_dict:
+        parts += [
+            "INTERROGATION SCENARIO & CASE CONTEXT:",
+            f"  Case: {scenario_dict.get('title', 'Investigation')} ({scenario_dict.get('case_number', 'N/A')})",
+            f"  Setting: {scenario_dict.get('location', 'Precinct Interrogation Room')}",
+            f"  Suspect: {scenario_dict.get('suspect', npc.name)}",
+            f"  Incident Summary: {scenario_dict.get('summary', '')}",
+            f"  Your Public Claim: {scenario_dict.get('suspect_alibi', '')}",
+            "  Context: You are sitting in the interrogation room facing detectives. You know you helped Danny cover up the theft by adjusting two ledger entries, but you are desperate to protect him.",
+            "",
+        ]
+
+    parts += [
         "CURRENT EMOTIONAL STATE:",
         f"  Stress:      {current_state.stress:.2f}  (0=calm, 1=breaking)",
         f"  Trust:       {current_state.trust:.2f}  (0=hostile, 1=open)",
@@ -453,6 +473,13 @@ def load_npc_from_file(filename: str) -> NPCCreate:
 
 def _deserialise_personality(raw: dict[str, Any]) -> NPCPersonality:
     tells_raw = raw.get("tells", {})
+    scenario_raw = raw.get("scenario")
+    scenario = None
+    if scenario_raw:
+        if isinstance(scenario_raw, NPCScenario):
+            scenario = scenario_raw
+        elif isinstance(scenario_raw, dict):
+            scenario = NPCScenario(**scenario_raw)
     return NPCPersonality(
         traits=raw["traits"],
         motivation=raw["motivation"],
@@ -465,6 +492,7 @@ def _deserialise_personality(raw: dict[str, Any]) -> NPCPersonality:
             nervous=tells_raw.get("nervous", ""),
             hostile=tells_raw.get("hostile", ""),
         ),
+        scenario=scenario,
     )
 
 
