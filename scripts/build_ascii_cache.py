@@ -13,23 +13,28 @@ PORTRAITS_PATHS = {
 }
 
 output_path = "api/data/portraits/ascii_cache.py"
-ascii_grids = {}
+ascii_grids_wide = {}
+ascii_grids_compact = {}
 
 for emotion, img_path in PORTRAITS_PATHS.items():
     if os.path.exists(img_path):
-        print(f"Building fine ASCII grid for {emotion} from {img_path}...")
-        ascii_grids[emotion] = convert_face_to_ascii_grid(img_path, emotion, width=46)
+        print(f"Building fine ASCII grids for {emotion} from {img_path}...")
+        ascii_grids_wide[emotion] = convert_face_to_ascii_grid(img_path, emotion, width=46)
+        ascii_grids_compact[emotion] = convert_face_to_ascii_grid(img_path, emotion, width=32)
     else:
         print(f"Warning: {img_path} not found!")
 
 # Ensure all grids have the same rows and columns for morphing
-target_h = max(len(g) for g in ascii_grids.values())
-target_w = 46
+target_h_wide = max(len(g) for g in ascii_grids_wide.values())
+target_h_compact = max(len(g) for g in ascii_grids_compact.values())
 
-for emotion, grid in ascii_grids.items():
-    # If any grid has fewer rows, pad with empty rows at the bottom
-    while len(grid) < target_h:
-        grid.append([(0, 0, 0, " ") for _ in range(target_w)])
+for emotion, grid in ascii_grids_wide.items():
+    while len(grid) < target_h_wide:
+        grid.append([(0, 0, 0, " ") for _ in range(46)])
+
+for emotion, grid in ascii_grids_compact.items():
+    while len(grid) < target_h_compact:
+        grid.append([(0, 0, 0, " ") for _ in range(32)])
 
 with open(output_path, "w", encoding="utf-8") as f:
     f.write('"""\n')
@@ -38,7 +43,7 @@ with open(output_path, "w", encoding="utf-8") as f:
     f.write('Pre-computed fine-character ANSI TrueColor ASCII portraits and in-place morphing engine for Marcus Webb.\n')
     f.write('Features:\n')
     f.write('  - Pure ASCII text typography (no chunky half-block pixels, native terminal background).\n')
-    f.write(f'  - Compact dimensions ({target_w} cols × {target_h} rows) designed for single-image in-place display.\n')
+    f.write(f'  - Adaptive dimensions: 46x{target_h_wide} (wide) and 32x{target_h_compact} (compact for split-screen).\n')
     f.write('  - High-dynamic-range face framing with clear facial features (eyes, eyebrows, mouth, expressions).\n')
     f.write('  - In-place TrueColor 8x8 Bayer dithered morph transitions.\n')
     f.write('"""\n\n')
@@ -85,13 +90,23 @@ with open(output_path, "w", encoding="utf-8") as f:
     f.write('                row_chars.append(f"\\033[38;2;{r};{g};{b}m{c}")\n')
     f.write('        lines.append("".join(row_chars) + "\\033[0m")\n')
     f.write('    return lines\n\n')
+    
     f.write('def render_ascii_grid(grid) -> str:\n')
     f.write('    """Render a 2D grid of (r, g, b, char) tuples into ANSI TrueColor text."""\n')
     f.write('    return "\\n".join(render_ascii_lines(grid))\n\n')
     
-    f.write('# 2D pixel grids: dict[emotion, list[list[(r, g, b, char)]]]\n')
+    f.write('# 2D pixel grids: dict[emotion, list[list[(r, g, b, char)]]] (46 cols wide)\n')
     f.write('PORTRAIT_GRIDS = {\n')
-    for emotion, grid in ascii_grids.items():
+    for emotion, grid in ascii_grids_wide.items():
+        f.write(f'    "{emotion}": [\n')
+        for row in grid:
+            f.write(f'        {row!r},\n')
+        f.write('    ],\n')
+    f.write('}\n\n')
+
+    f.write('# 2D pixel grids: dict[emotion, list[list[(r, g, b, char)]]] (32 cols compact)\n')
+    f.write('COMPACT_PORTRAIT_GRIDS = {\n')
+    for emotion, grid in ascii_grids_compact.items():
         f.write(f'    "{emotion}": [\n')
         for row in grid:
             f.write(f'        {row!r},\n')
@@ -102,35 +117,39 @@ with open(output_path, "w", encoding="utf-8") as f:
     f.write('PORTRAIT_LINES = {\n')
     f.write('    k: render_ascii_lines(v) for k, v in PORTRAIT_GRIDS.items()\n')
     f.write('}\n')
+    f.write('COMPACT_PORTRAIT_LINES = {\n')
+    f.write('    k: render_ascii_lines(v) for k, v in COMPACT_PORTRAIT_GRIDS.items()\n')
+    f.write('}\n')
     f.write('PORTRAITS = {\n')
     f.write('    k: "\\n".join(v) for k, v in PORTRAIT_LINES.items()\n')
     f.write('}\n\n')
     
-    f.write('def get_portrait_lines(behaviour: str) -> list[str]:\n')
+    f.write('def get_portrait_lines(behaviour: str, compact: bool = False) -> list[str]:\n')
     f.write('    """Return the list of static TrueColor ASCII portrait lines for Marcus Webb."""\n')
     f.write('    name = _normalize_behaviour(behaviour)\n')
-    f.write('    return PORTRAIT_LINES.get(name) or PORTRAIT_LINES.get("cooperative")\n\n')
+    f.write('    source = COMPACT_PORTRAIT_LINES if compact else PORTRAIT_LINES\n')
+    f.write('    return source.get(name) or source.get("cooperative")\n\n')
     
-    f.write('def get_portrait(behaviour: str) -> str:\n')
+    f.write('def get_portrait(behaviour: str, compact: bool = False) -> str:\n')
     f.write('    """Return the static TrueColor ASCII portrait string for Marcus Webb."""\n')
-    f.write('    name = _normalize_behaviour(behaviour)\n')
-    f.write('    return PORTRAITS.get(name) or PORTRAITS.get("cooperative")\n\n')
+    f.write('    return "\\n".join(get_portrait_lines(behaviour, compact=compact))\n\n')
     
-    f.write('def show_portrait(behaviour: str):\n')
+    f.write('def show_portrait(behaviour: str, compact: bool = False):\n')
     f.write('    """Print the static TrueColor ASCII portrait for Marcus Webb."""\n')
-    f.write('    art = get_portrait(behaviour)\n')
+    f.write('    art = get_portrait(behaviour, compact=compact)\n')
     f.write('    if art:\n')
     f.write('        print(f"\\n{art}")\n\n')
     
     f.write('def set_portrait_style(style: str):\n')
     f.write('    pass  # Fine ASCII is always used\n\n')
     
-    f.write('def get_morph_frames(from_behaviour: str, to_behaviour: str, frames: int = 10):\n')
+    f.write('def get_morph_frames(from_behaviour: str, to_behaviour: str, frames: int = 10, compact: bool = False):\n')
     f.write('    """Yield 2D grids representing intermediate morph frames from from_behaviour to to_behaviour."""\n')
     f.write('    from_name = _normalize_behaviour(from_behaviour)\n')
     f.write('    to_name = _normalize_behaviour(to_behaviour)\n')
-    f.write('    grid_a = PORTRAIT_GRIDS.get(from_name) or PORTRAIT_GRIDS.get("cooperative")\n')
-    f.write('    grid_b = PORTRAIT_GRIDS.get(to_name) or PORTRAIT_GRIDS.get("cooperative")\n')
+    f.write('    source = COMPACT_PORTRAIT_GRIDS if compact else PORTRAIT_GRIDS\n')
+    f.write('    grid_a = source.get(from_name) or source.get("cooperative")\n')
+    f.write('    grid_b = source.get(to_name) or source.get("cooperative")\n')
     f.write('    if not grid_a or not grid_b or from_name == to_name:\n')
     f.write('        yield grid_b\n')
     f.write('        return\n')
@@ -156,21 +175,21 @@ with open(output_path, "w", encoding="utf-8") as f:
     f.write('            frame.append(row)\n')
     f.write('        yield frame\n\n')
     
-    f.write('async def morph_portrait(from_behaviour: str, to_behaviour: str, frames: int = 10, delay: float = 0.035):\n')
+    f.write('async def morph_portrait(from_behaviour: str, to_behaviour: str, frames: int = 10, delay: float = 0.035, compact: bool = False):\n')
     f.write('    """Smoothly in-place cross-dissolve between two fine ASCII portraits using Bayer dithering."""\n')
     f.write('    from_name = _normalize_behaviour(from_behaviour)\n')
     f.write('    to_name = _normalize_behaviour(to_behaviour)\n\n')
     f.write('    if not sys.stdout.isatty():\n')
-    f.write('        show_portrait(to_name)\n')
+    f.write('        show_portrait(to_name, compact=compact)\n')
     f.write('        return\n\n')
-    f.write('    grid_a = PORTRAIT_GRIDS.get(from_name) or PORTRAIT_GRIDS.get("cooperative")\n')
-    f.write('    grid_b = PORTRAIT_GRIDS.get(to_name) or PORTRAIT_GRIDS.get("cooperative")\n\n')
+    f.write('    source = COMPACT_PORTRAIT_GRIDS if compact else PORTRAIT_GRIDS\n')
+    f.write('    grid_a = source.get(from_name) or source.get("cooperative")\n')
+    f.write('    grid_b = source.get(to_name) or source.get("cooperative")\n\n')
     f.write('    if not grid_a or not grid_b or from_name == to_name:\n')
-    f.write('        show_portrait(to_name)\n')
+    f.write('        show_portrait(to_name, compact=compact)\n')
     f.write('        return\n\n')
     f.write('    height = len(grid_a)\n')
-    f.write('    # Morph frames\n')
-    f.write('    for frame in get_morph_frames(from_behaviour, to_behaviour, frames=frames):\n')
+    f.write('    for frame in get_morph_frames(from_behaviour, to_behaviour, frames=frames, compact=compact):\n')
     f.write('        sys.stdout.write(f"\\033[{height}A\\r")\n')
     f.write('        sys.stdout.flush()\n')
     f.write('        sys.stdout.write(render_ascii_grid(frame) + "\\n")\n')

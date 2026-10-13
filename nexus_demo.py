@@ -46,19 +46,19 @@ try:
 except Exception:
     PORTRAITS = {}
 
-    def get_portrait_lines(behaviour):
+    def get_portrait_lines(behaviour, compact=False):
         return []
 
-    def get_morph_frames(from_b, to_b, frames=10):
+    def get_morph_frames(from_b, to_b, frames=10, compact=False):
         return []
 
     def render_ascii_lines(grid):
         return []
 
-    def show_portrait(behaviour):
+    def show_portrait(behaviour, compact=False):
         pass
 
-    async def morph_portrait(from_b, to_b, frames=10, delay=0.035):
+    async def morph_portrait(from_b, to_b, frames=10, delay=0.035, compact=False):
         pass
 
     def set_portrait_style(style):
@@ -93,10 +93,35 @@ BEHAVIOUR_COLOURS = {
 }
 
 # (label, key in emotional_state, is a high value "bad"?)
-STATE_ROWS = [("Stress", "stress", True), ("Trust", "trust", False), ("Suspicion", "suspicion", True)]
+STATE_ROWS = [
+    ("Stress", "stress", True),
+    ("Trust", "trust", False),
+    ("Suspicion", "suspicion", True),
+    ("Cooperation", "cooperation", False),
+]
 
 
 # ---------------------------------------------------------------- helpers
+def get_terminal_width() -> int:
+    """Return actual visible console window columns, accounting for Windows snap/resizing."""
+    if sys.platform == "win32":
+        try:
+            import ctypes, struct
+            h = ctypes.windll.kernel32.GetStdHandle(-11)
+            csbi = ctypes.create_string_buffer(22)
+            if ctypes.windll.kernel32.GetConsoleScreenBufferInfo(h, csbi):
+                _, _, _, _, _, left, top, right, bottom, _, _ = struct.unpack("hhhhHhhhhhh", csbi.raw)
+                win_w = right - left + 1
+                if win_w > 10:
+                    return win_w
+        except Exception:
+            pass
+    try:
+        return shutil.get_terminal_size((80, 24)).columns
+    except Exception:
+        return 80
+
+
 def val(obj, key, default=0.0):
     """Read a field from a dict or a Pydantic model."""
     if obj is None:
@@ -131,7 +156,7 @@ def behaviour_badge(behaviour):
 
 def say(who, text):
     """Print a reply wrapped to the terminal width."""
-    width = max(40, shutil.get_terminal_size((100, 20)).columns - 2)
+    width = max(40, get_terminal_width() - 2)
     prefix = f"{who}: "
     wrapped = textwrap.fill(text, width=width, initial_indent=prefix, subsequent_indent=" " * len(prefix))
     print(f"{BOLD}{wrapped[:len(prefix)]}{RESET}{wrapped[len(prefix):]}")
@@ -141,21 +166,28 @@ def show_state(state, delta):
     now, change = as_dict(state), as_dict(delta)
     for label, key, high_is_bad in STATE_ROWS:
         if key in now:
-            print(f"  {label:<10}{bar(now[key], high_is_bad=high_is_bad)} {now[key]:.2f}  ({change.get(key, 0.0):+.2f})")
+            print(f"  {label:<12}{bar(now[key], high_is_bad=high_is_bad)} {now[key]:.2f}  ({change.get(key, 0.0):+.2f})")
 
 
-def render_hud(face_lines, behaviour, state, delta, history, latency=None, secret=None, status_msg=None):
+def render_hud(face_lines, behaviour, state, delta, history, latency=None, secret=None, status_msg=None, compact=False):
     """Render the single unified HUD layout with persistent face on left and live metrics + transcript on right."""
-    term_w = shutil.get_terminal_size((100, 30)).columns
-    face_w = 46
+    term_w = get_terminal_width()
+    face_w = 32 if compact else 46
     b_name = str(getattr(behaviour, "value", behaviour)).lower()
     b_color = BEHAVIOUR_COLOURS.get(b_name, WHITE)
     badge = f"{BOLD}{b_color}[ {b_name.upper()} ]{RESET}"
 
-    if term_w >= 92:
-        right_w = max(42, term_w - face_w - 4)
+    if term_w >= 68:
+        # Guarantee line never wraps: face_w + 3 (" │ ") + right_w <= term_w - 1
+        max_right = max(28, term_w - face_w - 4)
+        right_w = min(max_right, 40 if compact else 70)
         r_lines = []
-        r_lines.append(f"{BOLD}NEXUS INTERROGATION ROOM: MARCUS WEBB{RESET}")
+
+        if compact:
+            r_lines.append(f"{BOLD}NEXUS: MARCUS WEBB{RESET}")
+        else:
+            r_lines.append(f"{BOLD}NEXUS INTERROGATION ROOM: MARCUS WEBB{RESET}")
+
         lat_str = f" {DIM}({latency:.2f}s){RESET}" if latency is not None else ""
         stat_line = f"Status: {badge}{lat_str}"
         if status_msg:
@@ -166,11 +198,13 @@ def render_hud(face_lines, behaviour, state, delta, history, latency=None, secre
         # Live emotional state bars
         st = as_dict(state)
         dt = as_dict(delta)
+        bar_w = 8 if compact else 12
         for label, key, high_is_bad in STATE_ROWS:
             if key in st:
                 d_val = dt.get(key, 0.0)
                 d_str = f"({d_val:+.2f})" if d_val != 0.0 else "      "
-                r_lines.append(f"{label:<10} {bar(st[key], width=12, high_is_bad=high_is_bad)} {st[key]:.2f} {d_str}")
+                lbl_fmt = f"{label:<11}" if compact else f"{label:<12}"
+                r_lines.append(f"{lbl_fmt} {bar(st[key], width=bar_w, high_is_bad=high_is_bad)} {st[key]:.2f} {d_str}")
 
         if secret:
             r_lines.append(f"{BOLD}{RED}🚨 CRACKED: {secret} 🚨{RESET}")
@@ -180,7 +214,7 @@ def render_hud(face_lines, behaviour, state, delta, history, latency=None, secre
         r_lines.append(f"{BOLD}TRANSCRIPT:{RESET}")
 
         # Available rows for the transcript
-        avail_rows = max(4, len(face_lines) - len(r_lines))
+        avail_rows = max(3, len(face_lines) - len(r_lines))
 
         # Format turns from newest to oldest so we never slice a turn in half
         formatted_turns = []
@@ -209,7 +243,7 @@ def render_hud(face_lines, behaviour, state, delta, history, latency=None, secre
 
         r_lines.extend(transcript_lines)
 
-        # Pad to match face height (26 rows)
+        # Pad to match face height
         while len(r_lines) < len(face_lines):
             r_lines.append("")
 
@@ -223,7 +257,7 @@ def render_hud(face_lines, behaviour, state, delta, history, latency=None, secre
         combined.append(divider)
         return "\n".join(combined)
     else:
-        # Stacked layout for narrower terminals (< 92 cols)
+        # Stacked layout for very narrow terminals (< 68 cols)
         out = []
         out.append(f"{BOLD}NEXUS INTERROGATION: MARCUS WEBB  {badge}{RESET}\033[K")
         for f_l in face_lines:
@@ -234,7 +268,7 @@ def render_hud(face_lines, behaviour, state, delta, history, latency=None, secre
             if key in st:
                 d_val = dt.get(key, 0.0)
                 d_str = f"({d_val:+.2f})" if d_val != 0.0 else "      "
-                out.append(f"  {label:<10} {bar(st[key], width=12, high_is_bad=high_is_bad)} {st[key]:.2f} {d_str}\033[K")
+                out.append(f"  {label:<11} {bar(st[key], width=10, high_is_bad=high_is_bad)} {st[key]:.2f} {d_str}\033[K")
         if secret:
             out.append(f"  {BOLD}{RED}🚨 CRACKED: {secret} 🚨{RESET}\033[K")
         out.append(f"{DIM}{'─' * min(term_w, 60)}{RESET}\033[K")
@@ -325,16 +359,31 @@ async def run(args):
         npc_id = val(npc, "id", None)
         name = val(npc, "name", None) or payload.get("name") or "Marcus"
 
-        previous_behaviour = "cooperative"
-        curr_state = {"stress": 0.20, "trust": 0.50, "suspicion": 0.25}
-        curr_delta = {"stress": 0.0, "trust": 0.0, "suspicion": 0.0}
+        def is_compact_mode():
+            if getattr(args, "compact", False):
+                return True
+            if getattr(args, "wide", False):
+                return False
+            return get_terminal_width() < 95
+
+        # Initialize emotional state dynamically from the backend NPC
+        init_st = (
+            val(npc, "current_emotional_state")
+            or val(npc, "current_state")
+            or val(npc, "initial_state")
+            or payload.get("initial_emotional_state", {})
+        )
+        curr_state = as_dict(init_st)
+        previous_behaviour = str(getattr(val(npc, "current_behaviour", "cooperative"), "value", val(npc, "current_behaviour", "cooperative"))).lower()
+        curr_delta = {"stress": 0.0, "trust": 0.0, "suspicion": 0.0, "cooperation": 0.0}
         history = []
 
         # Clear screen and draw initial persistent HUD
         if not args.no_face:
             sys.stdout.write("\033[2J\033[H")
-            face_lines = get_portrait_lines(previous_behaviour)
-            hud = render_hud(face_lines, previous_behaviour, curr_state, curr_delta, history)
+            compact = is_compact_mode()
+            face_lines = get_portrait_lines(previous_behaviour, compact=compact)
+            hud = render_hud(face_lines, previous_behaviour, curr_state, curr_delta, history, compact=compact)
             sys.stdout.write(hud + "\n\033[J")
             sys.stdout.flush()
         else:
@@ -363,9 +412,10 @@ async def run(args):
                     continue
 
             # 2) Live thinking status on the single persistent HUD
+            compact = is_compact_mode()
             if not args.no_face:
-                face_lines = get_portrait_lines(previous_behaviour)
-                hud = render_hud(face_lines, previous_behaviour, curr_state, curr_delta, history, secret=secret_cracked, status_msg="thinking...")
+                face_lines = get_portrait_lines(previous_behaviour, compact=compact)
+                hud = render_hud(face_lines, previous_behaviour, curr_state, curr_delta, history, secret=secret_cracked, status_msg="thinking...", compact=compact)
                 sys.stdout.write("\033[H" + hud + "\n\033[J")
                 sys.stdout.flush()
             else:
@@ -392,10 +442,11 @@ async def run(args):
 
             # 4) If emotion changed, smoothly morph the single face in place!
             if not args.no_face:
+                compact = is_compact_mode()
                 if previous_behaviour and previous_behaviour != curr_behaviour:
-                    for frame_grid in get_morph_frames(previous_behaviour, curr_behaviour, frames=args.morph_frames):
+                    for frame_grid in get_morph_frames(previous_behaviour, curr_behaviour, frames=args.morph_frames, compact=compact):
                         frame_lines = render_ascii_lines(frame_grid)
-                        hud = render_hud(frame_lines, curr_behaviour, curr_state, curr_delta, history, latency=latency, secret=secret_cracked)
+                        hud = render_hud(frame_lines, curr_behaviour, curr_state, curr_delta, history, latency=latency, secret=secret_cracked, compact=compact)
                         sys.stdout.write("\033[H" + hud + "\n\033[J")
                         sys.stdout.flush()
                         await asyncio.sleep(args.morph_delay)
@@ -406,7 +457,8 @@ async def run(args):
                 previous_behaviour = curr_behaviour
 
                 # Redraw persistent HUD with updated transcript
-                hud = render_hud(get_portrait_lines(curr_behaviour), curr_behaviour, curr_state, curr_delta, history, latency=latency, secret=secret_cracked)
+                face_lines = get_portrait_lines(curr_behaviour, compact=compact)
+                hud = render_hud(face_lines, curr_behaviour, curr_state, curr_delta, history, latency=latency, secret=secret_cracked, compact=compact)
                 sys.stdout.write("\033[H" + hud + "\n\033[J")
                 sys.stdout.flush()
             else:
@@ -434,6 +486,8 @@ def main():
     parser.add_argument("--host", default="localhost:8000", help="Nexus API host:port (default: localhost:8000)")
     parser.add_argument("--profile", default="api/data/npcs/marcus_webb.json", help="path to NPC profile JSON")
     parser.add_argument("--auto", action="store_true", help="type scripted lines automatically")
+    parser.add_argument("--compact", action="store_true", help="force compact portrait mode (32 cols, ideal for split screen)")
+    parser.add_argument("--wide", action="store_true", help="force wide portrait mode (46 cols)")
     parser.add_argument("--no-face", action="store_true", help="disable detailed ASCII portrait rendering")
     parser.add_argument("--morph-frames", type=int, default=10, help="frames for emotional morph transitions (default: 10)")
     parser.add_argument("--morph-delay", type=float, default=0.035, help="seconds per morph transition frame (default: 0.035)")
