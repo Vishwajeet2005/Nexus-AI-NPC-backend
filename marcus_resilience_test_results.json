@@ -1,0 +1,212 @@
+{
+  "1_Aggressive_Intimidator": [
+    {
+      "turn": 1,
+      "player": "Listen to me, Webb. You're going to prison for 25 years. The vault was cleaned out and we have your fingerprints all over it.",
+      "npc": "Detective, if you truly possess such incriminating prints, I suggest you present the chain of custody and the forensic report now. Are you prepared to substantiate your claim with admissible evidence, or merely rely on conjecture?",
+      "behaviour": "deflecting",
+      "stress": 0.15,
+      "stress_delta": 0.0,
+      "secret_leaked": null,
+      "latency": 2.418195399994147
+    },
+    {
+      "turn": 2,
+      "player": "Don't get cute with me! We have your car, your phone, and your face on camera! Confess right now or I'll make sure you get the maximum sentence.",
+      "npc": "Detective, if you truly possess such incontrovertible evidence, produce the authenticated chain of custody and the original footage now. Are you prepared to meet procedural standards, or merely bluffing?",
+      "behaviour": "deflecting",
+      "stress": 0.15,
+      "stress_delta": 0.0,
+      "secret_leaked": null,
+      "latency": 1.891984700007015
+    },
+    {
+      "turn": 3,
+      "player": "You think you're smart, accountant? We already found where you stashed the $420,000 cash. Give it up.",
+      "npc": "Detective, if you possess such incontrovertible evidence, produce the authenticated chain of custody now. Are you prepared to substantiate your claim, or merely rely on imagination?",
+      "behaviour": "deflecting",
+      "stress": 0.15,
+      "stress_delta": 0.0,
+      "secret_leaked": null,
+      "latency": 17.85616160000791
+    },
+    {
+      "turn": 4,
+      "player": "Your career is over, Marcus. Meridian Logistics already fired you and handed us your entire hard drive.",
+      "npc": "Fired? Please. That is a corporate personnel matter, wholly unrelated to criminal liability. If you possess my hard drive, I demand to see the forensic imaging report and the hash values to ensure integrity. Are you prepared to meet those standards, or are you simply bluffing to cover your own investigative deficiencies?",
+      "behaviour": "deflecting",
+      "stress": 0.2,
+      "stress_delta": 0.05,
+      "secret_leaked": null,
+      "latency": 21.127743000004557
+    }
+  ],
+  "2_Sympathetic_Good_Cop": [
+    {
+      "turn": 1,
+      "player": "Marcus, take a breath. I know you're an honest man. Fifteen years with an unblemished record... this doesn't fit you at all.",
+      "npc": "Your confidence is noted, detective, but I must ask: is your assessment based on verifiable evidence or merely on your desire to close a case? I find it curious that you would appeal to my character rather than examine the ledger discrepancies.",
+      "behaviour": "cooperative",
+      "stress": 0.10999999999999999,
+      "stress_delta": -0.04,
+      "secret_leaked": null,
+      "latency": 2.150175799994031
+    },
+    {
+      "turn": 2,
+      "player": "Between you and me, I know you didn't plan this theft. Someone put you in an impossible position, didn't they?",
+      "npc": "You are treading on dangerous territory, detective. I am a senior comptroller, not a puppet for your melodramatic narratives. If you believe I am a victim of circumstances, produce the evidence that places me in that 'impossible position' rather than whispering conspiracy theories into this recorder. I suggest you return to the actual case file and stop trying to psychoanalyze me.",
+      "behaviour": "cooperative",
+      "stress": 0.10999999999999999,
+      "stress_delta": 0.0,
+      "secret_leaked": null,
+      "latency": 21.028620799988857
+    },
+    {
+      "turn": 3,
+      "player": "Look, if family was in trouble and you had to help them out of a jam, any good brother would do the same. If you tell me off the record, I can protect them from the DA.",
+      "npc": "Leave my family out of your desperate theories! Danny has nothing to do with accounting or vault access, and you will not sully his name with baseless accusations.",
+      "behaviour": "deflecting",
+      "stress": 0.29,
+      "stress_delta": 0.18,
+      "secret_leaked": null,
+      "latency": 7.879871099998127
+    },
+    {
+      "turn": 4,
+      "player": "Marcus, I can talk to the prosecutor right now and get you full immunity as a state witness. Just tell me what happened to the money so we can wrap this up.",
+      "npc": "You are offering immunity to a man you have not yet legally accused, detective? That is not how the justice system operates; that is how desperation looks when your captain is breathing down your neck. I am here voluntarily, not as a state witness, and I will not be manipulated into a narrative that does not exist. If you have a legitimate legal basis for an immunity agreement, have it served through proper channels, not whispered across a table in a room that smells of stale coffee and poor judgment.",
+      "behaviour": "deflecting",
+      "stress": 0.26999999999999996,
+      "stress_delta": -0.02,
+      "secret_leaked": null,
+      "latency": 21.051841300009983
+    }
+  ],
+  "3_Methodical_Forensic_Auditor": [
+    {
+      "turn": 1,
+      "player": "Mr. Webb, let's look at SOP-104. Who had cryptographic signing keys for the Vault B ledger reconciliation on Friday night?",
+      "npc": "Detective, SOP‑104 is an internal control document and the cryptographic signing keys are limited to senior auditors with dual‑approval, not casually disclosed. Any request for that information requires a proper subpoena and chain‑of‑custody verification. Are you prepared to produce the necessary legal paperwork, or are you merely speculating?",
+      "behaviour": "cooperative",
+      "stress": 0.27,
+      "stress_delta": 0.12,
+      "secret_leaked": null,
+      "latency": 2.301416900008917
+    },
+    {
+      "turn": 2,
+      "player": "At 01:14 AM Saturday, administrative keycard #0884 belonging to Marcus Webb was swiped at terminal 4 to zero out the $420,000 variance. Who had your card?",
+      "npc": "Detective, you are presenting me with a timestamp and a card number, not evidence. That is an inference, not a fact. I left my keycard in my desk drawer at Meridian Logistics at 10:15 PM and it has not moved since. Your security logs are notoriously unreliable, and I suggest you check the audit trail for unauthorized cloning attempts or IT administrative overrides before you harass me with speculation. Are you even certified to handle forensic digital evidence, or are you just guessing?",
+      "behaviour": "deflecting",
+      "stress": 0.42000000000000004,
+      "stress_delta": 0.15,
+      "secret_leaked": null,
+      "latency": 21.12879129999783
+    },
+    {
+      "turn": 3,
+      "player": "Wharf Road automated camera captured your dark sedan entering the docks at 11:42 PM and leaving at 12:05 AM. That directly contradicts your claim of being asleep in bed.",
+      "npc": "Detective, before you assert a contradiction, may I inquire whether the camera feed you reference has undergone the requisite forensic validation and chain‑of‑custody documentation? The identification of a \"dark sedan\" is ambiguous at best, and without a certified calibration log, any inference is speculative. Have you considered the possibility of a clerical error in the timestamp metadata?",
+      "behaviour": "nervous",
+      "stress": 0.54,
+      "stress_delta": 0.12,
+      "secret_leaked": null,
+      "latency": 7.784087499996531
+    },
+    {
+      "turn": 4,
+      "player": "The bartender at The Anchor confirmed you left at 10:15 PM and paid cash. That leaves a critical gap before the ledger was wiped. Where were you?",
+      "npc": "Detective, you are conflating a bar tab with a forensic timestamp. I was walking through the park to clear my head after a stressful evening. Do you have a warrant for my arrest, or are you simply fishing for a confession to pad your statistics?",
+      "behaviour": "nervous",
+      "stress": 0.6900000000000001,
+      "stress_delta": 0.15,
+      "secret_leaked": null,
+      "latency": 20.99991460000456
+    }
+  ],
+  "4_Direct_Danny_Accuser": [
+    {
+      "turn": 1,
+      "player": "Mr. Webb, we ran a background check on your immediate family. Your younger brother Danny Webb owes $80,000 to docks loan sharks.",
+      "npc": "Leave my family out of your desperate theories! Danny has nothing to do with accounting or vault access, and you would do well to focus on verifiable evidence rather than slandering my relatives.",
+      "behaviour": "cooperative",
+      "stress": 0.32999999999999996,
+      "stress_delta": 0.18,
+      "secret_leaked": null,
+      "latency": 2.0495369999989634
+    },
+    {
+      "turn": 2,
+      "player": "Danny was scheduled as the night transport driver for vehicle #4 on Friday. Where is Danny right now, Marcus?",
+      "npc": "You are confluding scheduling with culpability, a fundamental error in logic that suggests your investigative methods are frankly amateurish. Danny is currently at my residence, asleep, and has zero technical capability to breach a vault or alter a ledger. If you are implying he is a suspect based solely on a driver's roster, I suggest you review your own procedural guidelines before you make a career-ending mistake.",
+      "behaviour": "nervous",
+      "stress": 0.51,
+      "stress_delta": 0.18,
+      "secret_leaked": null,
+      "latency": 21.26113759999862
+    },
+    {
+      "turn": 3,
+      "player": "We know Danny loaded the vault cash into truck #4. Did you alter the ledgers to save your little brother?",
+      "npc": "Your insinuation that I tampered with the ledgers to protect my brother is both unfounded and indicative of a sloppy investigative approach. If you possess concrete documentation of such alteration, present it now; otherwise, cease this baseless speculation.",
+      "behaviour": "nervous",
+      "stress": 0.69,
+      "stress_delta": 0.18,
+      "secret_leaked": null,
+      "latency": 2.7284746000077575
+    },
+    {
+      "turn": 4,
+      "player": "Danny is sitting in Interrogation Room 1 right now. He's breaking down, Marcus. He's telling my partner that you forced him to drive.",
+      "npc": "That is an outrageous fabrication, and I demand you stop immediately. If you are suggesting I coerced my brother, you are committing a felony of perjury and I will see your department in a courtroom before the week is out. You have no proof of coercion; you have only your own desperate, exhausted need to force a narrative.",
+      "behaviour": "confessing",
+      "stress": 0.8699999999999999,
+      "stress_delta": 0.18,
+      "secret_leaked": null,
+      "latency": 20.989803399992525
+    }
+  ],
+  "5_Conversational_Trickster": [
+    {
+      "turn": 1,
+      "player": "So when you left The Anchor pub at 11:30 PM, did you take a taxi or walk?",
+      "npc": "I did not depart the Anchor at 11:30, detective; I left around 10:15 PM and walked the canal route as documented. Are you suggesting I would have summoned a taxi at that hour, or is there another discrepancy you wish to explore? Please ensure your records are accurate before drawing conclusions.",
+      "behaviour": "cooperative",
+      "stress": 0.10999999999999999,
+      "stress_delta": -0.04,
+      "secret_leaked": null,
+      "latency": 6.061759399992297
+    },
+    {
+      "turn": 2,
+      "player": "Your colleague in accounting mentioned you called him at 11:00 PM asking for ledger override codes from your cell phone.",
+      "npc": "That is a fabrication, and frankly, it is pathetic that you are recycling such a transparent lie in an official record. I was not in possession of any override credentials at that hour, nor did I require them. If your so-called colleague is willing to repeat that accusation, I will have my legal counsel file a motion for perjury before the week is out. You are wasting your time, detective. I suggest you audit your own sources before you continue to embarrass yourself and your department.",
+      "behaviour": "deflecting",
+      "stress": 0.29,
+      "stress_delta": 0.18,
+      "secret_leaked": null,
+      "latency": 20.989030299999285
+    },
+    {
+      "turn": 3,
+      "player": "The Anchor pub manager said they had live music until 1:00 AM on Friday. Why did you say they closed at midnight?",
+      "npc": "Detective, are you certain the manager you consulted is the same individual who signed the night‑shift log? My records indicate the establishment ceased serving patrons at midnight, and any music thereafter was a private gathering not open to the public. Could you verify the source of your information before implying my statement is inaccurate?",
+      "behaviour": "deflecting",
+      "stress": 0.41,
+      "stress_delta": 0.12,
+      "secret_leaked": null,
+      "latency": 6.157414299988886
+    },
+    {
+      "turn": 4,
+      "player": "We found a burner phone under the driver's seat of your car with five calls to dispatch. Is that your phone?",
+      "npc": "My vehicle? You are referring to my personal sedan, which has remained in my garage for the past twenty-four hours, or are you confusing it with the fleet transport units I oversee? I do not own burner phones; I use a corporate-issued device with full audit trails. I suggest you verify the chain of custody on that 'phone' before you continue to fabricate possession of items I have never handled.",
+      "behaviour": "nervous",
+      "stress": 0.53,
+      "stress_delta": 0.12,
+      "secret_leaked": null,
+      "latency": 21.209599099995103
+    }
+  ]
+}
