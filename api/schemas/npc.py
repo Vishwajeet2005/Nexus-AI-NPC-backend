@@ -87,6 +87,11 @@ class NPCTell(BaseModel):
         description="Signals when hostile — shutdown behaviours.",
         examples=["Crosses arms. Goes completely monosyllabic."],
     )
+    confessing: Optional[str] = Field(
+        default="Voice cracks, breathing ragged, head in hands, emotionally spent.",
+        description="Physical/verbal signals when the NPC is confessing or broken.",
+        examples=["Voice cracks, head in hands, breathing ragged."],
+    )
 
 
 class NPCScenario(BaseModel):

@@ -242,6 +242,7 @@ async def get_npc_memory(
     npc_id: UUID,
     limit: int = Query(default=20, ge=1, le=100, description="Max entries to return."),
     offset: int = Query(default=0, ge=0, description="Pagination offset."),
+    current_user: Player = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> NPCMemoryResponse:
     """

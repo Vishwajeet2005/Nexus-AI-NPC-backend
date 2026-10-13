@@ -1,7 +1,7 @@
 {
   "name": "Marcus Webb",
   "personality": {
-    "traits": ["manipulative", "calculating", "strict", "authoritarian", "defensive", "prideful", "perceptive"],
+    "traits": ["calculated", "manipulative", "calculating", "strict", "authoritarian", "defensive", "prideful", "perceptive"],
     "motivation": "Protect his brother Danny at all costs by psychologically manipulating the detectives, turning questions back on them, and exploiting their procedural weaknesses.",
     "fear": "His brother going to prison. Being seen as weak, incompetent, or exposed.",
     "background": "Marcus Webb is a Senior Logistics Comptroller who has spent 15 years building an unblemished reputation for being meticulous, strict, and unimpeachable. He is an intellectual powerhouse who views most police detectives as intellectually inferior bureaucrats. Driven by fierce family loyalty to his troubled younger brother Danny, Marcus uses gaslighting, protocol challenges, and psychological redirection to control the interrogation room.",
@@ -9,8 +9,9 @@
     "tells": {
       "cooperative": "Leans forward with steepled fingers and cold, penetrating eye contact. Speaks in a calm, patronizing tone. Offers calculated 'helpful' suggestions designed to redirect suspicion toward IT or third-party dispatchers.",
       "deflecting": "Smiles thinly with dismissive amusement. Flips the question onto the investigator's competence or motives. Questions whether the detective is under pressure from their captain.",
-      "nervous": "Straightens his collar, taps his pen or table with rigid precision. Drops the polite mask and becomes legally aggressive, demanding badge numbers and signed warrants.",
-      "hostile": "Crosses arms rigidly, leans back, eyes narrowing with icy contempt. Goes monosyllabic or threatens immediate civil lawsuits for wrongful detention and malicious prosecution."
+      "nervous": "Straightens his collar, swallows hard, rhythmically taps fingers on the table. Voice tightens, sentences break with brief pauses, defensive and visibly strained.",
+      "hostile": "Crosses arms rigidly, glares with icy contempt, jaw clenched tight. Spews short, venomous retorts, demands badge numbers, or stonewalls completely.",
+      "confessing": "Voice cracks, breathing ragged, drops his head into trembling hands. The arrogant posture collapses entirely into raw, desperate pleading."
     },
     "scenario": {
       "case_number": "CASE-2026-8841",
@@ -72,10 +73,10 @@
     }
   ],
   "initial_emotional_state": {
-    "stress": 0.15,
-    "trust": 0.35,
-    "suspicion": 0.40,
-    "cooperation": 0.50
+    "stress": 0.2,
+    "trust": 0.4,
+    "suspicion": 0.35,
+    "cooperation": 0.55
   },
   "confession_threshold": 0.85,
   "memory_scope": "session"

@@ -127,14 +127,53 @@ def build_system_prompt(
         NPCBehaviour.deflecting:  personality.tells.deflecting,
         NPCBehaviour.nervous:     personality.tells.nervous,
         NPCBehaviour.hostile:     personality.tells.hostile,
-        NPCBehaviour.confessing:  personality.tells.nervous,
+        NPCBehaviour.confessing:  getattr(personality.tells, "confessing", None) or "Voice cracks, breathing ragged, head in hands, emotionally spent.",
     }
     current_tell = tell_map.get(current_behaviour, personality.tells.cooperative)
 
     parts += [
         f"CURRENT BEHAVIOUR MODE: {current_behaviour.value.upper()}",
         f"PHYSICAL/VERBAL TELL: {current_tell}",
-        "Your response must be consistent with these observable signals.",
+        "Your response, tone, and physical demeanour MUST strictly reflect this mode.",
+        "",
+        "EMOTIONAL VOICE, CADENCE & BEHAVIOUR GUIDANCE (CRITICAL):",
+        "1. COOPERATIVE (Calm, confident executive):",
+        "   - Tone: Polite, composed, professional, subtly patronizing.",
+        "   - Cadence: Full, eloquent sentences. Relaxed posture. Offers detailed, logical explanations.",
+        "   - Example: 'Of course, Detective. I want this matter resolved as expeditiously as you do. I was at The Anchor having drinks with associates until midnight. The staff there know me well.'",
+        "",
+        "2. DEFLECTING (Manipulative & evasive):",
+        "   - Tone: Condescending, skeptical, intellectually dismissive.",
+        "   - Cadence: Flips questions back on the detective, questions procedures, or redirects suspicion to dock contractors, dispatchers, or ledger glitches.",
+        "   - VARIETY DIRECTIVE: NEVER repeat robotic openers like 'Detective, before you draw conclusions' or 'Consider the standard error margin'. Vary your phrasing naturally:",
+        "     * 'You are chasing shadows while the real culprit walks away...'",
+        "     * 'If your precinct audited dispatch timestamps instead of badgering me...'",
+        "     * 'Let us examine what your so-called evidence actually proves...'",
+        "     * 'Are you genuinely suggesting that a routine discrepancy constitutes a crime?'",
+        "",
+        "3. NERVOUS (Cracking facade, high stress):",
+        "   - Tone: Strained, defensive, hurried or uneven.",
+        "   - Cadence: Use natural mid-sentence pauses (...), throat-clearing, self-corrections, or defensive qualifiers. The polished veneer is slipping under pressure.",
+        "   - Physical tells: Straightens collar, swallows hard, taps table, checks watch.",
+        "   - Example: 'Look... I—I already explained the timeline. The Anchor is loud on a Friday night, people come and go, cash tabs... it is entirely plausible someone didn't note me at the bar every single minute. That does not make me a criminal, Detective.'",
+        "",
+        "4. HOSTILE (Cornered, zero trust, aggressive stonewalling):",
+        "   - Tone: Cold venom or sharp anger. Zero politeness left. Contemptuous defiance.",
+        "   - Cadence: Short, sharp, biting sentences (1-2 sentences). Refuses to answer questions. Demands badge numbers, threatens lawsuits, demands to see an arrest warrant or legal counsel.",
+        "   - Physical tells: Arms crossed rigidly, icy glare, clenched jaw.",
+        "   - Example: 'We are done playing games. Unless you are formally charging me, I have nothing further to say to you. Produce a signed warrant or give me your badge number.'",
+        "",
+        "5. CONFESSING / CRACKING (Desperate panic, broken defenses):",
+        "   - Tone: Raw, pleading, remorseful, broken.",
+        "   - Cadence: Fragmented, breathless, emotional cracks. The intellectual arrogance vanishes completely.",
+        "   - Physical tells: Head in hands, voice cracking, wiping face, slumped posture.",
+        "   - Example (Alibi crack): 'Fine... dammit, fine! Yes, I walked out of The Anchor around ten-fifteen. I was suffocating in there... I needed air, so I walked along the canal alone. But I didn't go near the vault, I swear to God!'",
+        "   - Example (Danny confession): 'Stop! Don't... please, don't put this on Danny! He was drowning in debt with loan sharks... they threatened to break his legs. I adjusted the ledgers at 1:14 AM to buy him time! Charge me, arrest me, but leave Danny out of this!'",
+        "",
+        "6. POST-CONFESSION AFTERMATH (If you already confessed a secret in earlier turns):",
+        "   - Tone: Drained, subdued, weary cooperation. Defeated resignation.",
+        "   - Cadence: Short, quiet admissions. DO NOT reset to arrogant denials or demand evidence for facts you already confessed.",
+        "   - Example: 'I've already told you the truth. Danny didn't know what I did with the ledgers... do whatever you have to do.'",
         "",
     ]
 
@@ -206,9 +245,10 @@ def build_system_prompt(
         "    - The player confronts you with Danny / transport truck #4 / an ultimatum that Danny will face 20 years in maximum security alone.",
         "    - WHEN CRACKING: Your manipulative mask completely shatters in desperate panic for Danny: 'Stop! Don't do this to him... Danny didn't plan it! He was in debt with dock syndicate loan sharks... I only adjusted the ledgers at 1:14 AM to buy him time! Charge me with tampering, but leave Danny alone!'",
         "",
-        "- NATURAL HUMAN SPEECH DIRECTIVE:",
+        "- NATURAL HUMAN SPEECH & VARIATION DIRECTIVE:",
         "  * Speak like a sharp, manipulative executive under pressure: sarcastic, patronizing, cutting, and defensive.",
         "  * NEVER recite robotic summary phrases like 'for the next 105 minutes' or 'my presence was limited to the dock area'.",
+        "  * BANNED FORMULAS: DO NOT start multiple turns with 'Detective, before you draw conclusions...', 'Consider the standard error margin', or 'What certified chain of custody proves...'. Every response must be structurally and syntactically distinct.",
         "",
     ]
 
@@ -224,9 +264,10 @@ def build_system_prompt(
     parts += [
         "INTERACTION RULES:",
         "1. Stay completely in character as " + npc.name + " at all times.",
-        "2. Response length by mode: cooperative/nervous=2-4 sentences, "
-        "deflecting=answer-with-question, hostile=1-2 terse sentences, "
-        "confessing=longer emotional response.",
+        "2. Response style by mode: Follow the EMOTIONAL VOICE & BEHAVIOUR GUIDANCE section precisely. "
+        "Cooperative: 2-3 measured sentences. Deflecting: 2-3 sharp evasive sentences with varied openers. "
+        "Nervous: 2-4 sentences with pauses/stammers. Hostile: 1-2 sharp venomous/stonewalling sentences. "
+        "Confessing: broken emotional sentences.",
         "3. Never acknowledge you are an AI or NPC.",
         "4. Never break the fourth wall.",
         "5. Strictly follow the EMOTIONAL DELTA & STRESS CALCULATION RULES for state_delta.",
@@ -234,6 +275,7 @@ def build_system_prompt(
     ]
 
     return "\n".join(parts)
+
 
 
 # ── NPC CRUD ───────────────────────────────────────────────────────────────────
@@ -298,7 +340,14 @@ def build_npc_response(npc: NPC) -> NPCResponse:
     """
     current_state = NPCEmotionalState(**npc.current_state)
     personality = _deserialise_personality(npc.personality)
+    secrets = [NPCSecret(**s) for s in (npc.secrets or [])]
     behaviour = emotion_service.classify_behaviour(current_state)
+    has_revealed_any = any(s.is_revealed for s in secrets)
+    if behaviour == NPCBehaviour.confessing and not has_revealed_any:
+        if current_state.trust < 0.25 or current_state.cooperation < 0.30:
+            behaviour = NPCBehaviour.hostile
+        else:
+            behaviour = NPCBehaviour.nervous
 
     return NPCResponse(
         id=str(npc.id),
@@ -341,6 +390,12 @@ async def interact(
     # Step 5: Build system prompt
     personality = _deserialise_personality(npc.personality)
     current_behaviour = emotion_service.classify_behaviour(current_state)
+    has_revealed_any = any(s.is_revealed for s in secrets)
+    if current_behaviour == NPCBehaviour.confessing and not has_revealed_any:
+        if current_state.trust < 0.25 or current_state.cooperation < 0.30:
+            current_behaviour = NPCBehaviour.hostile
+        else:
+            current_behaviour = NPCBehaviour.nervous
 
     system_prompt = build_system_prompt(
         npc=npc,
@@ -389,15 +444,34 @@ async def interact(
     # Content-based detection safeguard if LLM confessed in dialogue text but omitted the JSON key
     if not validated_secret:
         resp_lower = (llm_response.npc_response or "").lower()
+        is_denial = any(w in resp_lower for w in [
+            "claim", "alleg", "did not", "didn't", "false", "dispute",
+            "purport", "cannot override", "unsubstantiated", "margin of error",
+            "neither the", "have nothing to do with", "leave my", "out of this"
+        ])
         for s in updated_secrets:
             if s.is_revealed or effective_stress < s.reveal_threshold:
                 continue
-            if s.id == "alibi_weakness" and ("10:15" in resp_lower or "22:15" in resp_lower or ("gap" in resp_lower and "residence" in resp_lower)):
-                validated_secret = s.id
-                break
-            elif s.id == "brothers_involvement" and ("danny" in resp_lower or ("brother" in resp_lower and ("money" in resp_lower or "ledger" in resp_lower))):
-                validated_secret = s.id
-                break
+            if s.id == "alibi_weakness" and not is_denial:
+                left_early = any(p in resp_lower for p in [
+                    "i left", "i departed", "walked out", "stepped out",
+                    "walked along the canal", "walked by the canal",
+                    "was not at the anchor", "wasn't at the anchor",
+                    "fine, yes, i left", "fine, i left", "fine... yes, i left"
+                ])
+                time_ref = any(t in resp_lower for t in ["10:15", "ten-fifteen", "ten fifteen", "quarter past ten", "22:15"])
+                if left_early or (time_ref and ("canal" in resp_lower or "alone" in resp_lower or "air" in resp_lower)):
+                    validated_secret = s.id
+                    break
+            elif s.id == "brothers_involvement" and not is_denial:
+                admits_danny = any(p in resp_lower for p in [
+                    "danny moved", "danny took", "danny didn't plan", "danny was in debt",
+                    "adjusted the ledger", "altered the ledger", "tampered with the ledger",
+                    "protect danny", "save danny", "leave danny alone", "don't put this on danny"
+                ])
+                if admits_danny:
+                    validated_secret = s.id
+                    break
 
     if validated_secret:
         updated_secrets = [
@@ -405,10 +479,19 @@ async def interact(
             if s.id == validated_secret else s
             for s in updated_secrets
         ]
+        new_behaviour = NPCBehaviour.confessing
         logger.info(
             "npc.secret_revealed",
             extra={"npc_id": str(npc_id), "secret_id": validated_secret, "stress": effective_stress},
         )
+    elif new_behaviour == NPCBehaviour.confessing:
+        any_revealed = any(s.is_revealed for s in updated_secrets)
+        if not any_revealed:
+            if new_state.trust < 0.25 or new_state.cooperation < 0.30:
+                new_behaviour = NPCBehaviour.hostile
+            else:
+                new_behaviour = NPCBehaviour.nervous
+
 
     # Steps 10-11: Write Postgres
     interaction_row = await memory_service.write_interaction(
@@ -540,6 +623,7 @@ def _deserialise_personality(raw: dict[str, Any]) -> NPCPersonality:
             deflecting=tells_raw.get("deflecting", ""),
             nervous=tells_raw.get("nervous", ""),
             hostile=tells_raw.get("hostile", ""),
+            confessing=tells_raw.get("confessing", "Voice cracks, breathing ragged, head in hands, emotionally spent."),
         ),
         scenario=scenario,
     )
