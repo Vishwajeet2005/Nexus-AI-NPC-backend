@@ -74,7 +74,8 @@ SCRIPTED_LINES = [
     "A dark sedan matching your vehicle was flagged heading down Wharf Road toward the warehouse at 11:42 PM. Care to explain that?",
     "Someone used your administrative keycard to wipe the vault ledger at 1:14 AM. You expect us to believe that was a coincidence?",
     "We pulled your phone records from Friday night. Multiple frantic calls from an unlisted number right before the robbery. Who called you, Marcus?",
-    "Transport truck #4 was driven by an insider. If you don't start talking, you're taking the full 20-year sentence for grand larceny alone. Are you really throwing your life away to shield Danny?",
+    "Port authority has transport truck #4 cornered at the docks with your brother Danny behind the wheel. Danny is taking the full 20-year sentence in maximum security as the mastermind of grand larceny, unless you talk right now.",
+    "Are you really going to let Danny throw his entire life away in maximum security, or are you going to confess why you altered that ledger at 1:14 AM to protect your brother?",
 ]
 
 # ---------------------------------------------------------------- styling

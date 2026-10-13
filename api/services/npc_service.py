@@ -183,13 +183,13 @@ def build_system_prompt(
         parts.append("PRIVATE SECRETS & PSYCHOLOGICAL RESISTANCE:")
         parts.append("You have guarded secrets that you MUST vigorously protect at all costs until you are broken by stress.")
         for secret in unrevealed:
-            can_break = current_state.stress >= secret.reveal_threshold
-            status_desc = f"STRESS MET ({current_state.stress:.2f} >= {secret.reveal_threshold:.2f}) - REQUIRES ACTIVE TRIGGER TO CRACK" if can_break else f"LOCKED (Stress {current_state.stress:.2f} < {secret.reveal_threshold:.2f} -> MUST DENY AND RESIST)"
+            can_break = current_state.stress >= (secret.reveal_threshold - 0.12)
+            status_desc = f"STRESS THRESHOLD REACHABLE THIS TURN (Current: {current_state.stress:.2f}, Threshold: {secret.reveal_threshold:.2f}) - IF THE PLAYER PRESENTS THE TRIGGER THIS TURN, BREAK AND CONFESS" if can_break else f"LOCKED (Stress {current_state.stress:.2f} < {secret.reveal_threshold:.2f} -> MUST DENY AND RESIST)"
             parts.append(
                 f'  - Secret ID "{secret.id}" [Threshold: Stress >= {secret.reveal_threshold:.2f} | Status: {status_desc}]:\n'
                 f'    Secret Truth (Internal knowledge only): {secret.content}\n'
                 f'    Strict Trigger Required: {secret.reveal_trigger}\n'
-                f'    RESISTANCE DIRECTIVE: Having high stress alone DOES NOT mean you confess! You CANNOT reveal this secret unless the player actively presents the required trigger. If the player asks generic questions ("Where were you?", "Can you tell me where you were after 11?"), DO NOT CONFESS! Deflect and defend your alibi firmly.'
+                f'    CRACKING DIRECTIVE: If your stress reaches or exceeds {secret.reveal_threshold:.2f} (or if this turn\'s devastating accusation pushes you over) AND the player presents the required trigger, your emotional defenses completely collapse and you MUST confess this secret! Set secret_leaked to "{secret.id}".'
             )
         parts.append("")
 
@@ -255,9 +255,9 @@ def build_system_prompt(
     # Interaction rules
     rule_6 = (
         f"6. SECRET LEAK & CONFESSION RULES:\n"
-        f"   - NEVER reveal a secret while your current stress is below its threshold (alibi_weakness: 0.65, brothers_involvement: 0.85).\n"
+        f"   - When your stress reaches or exceeds a secret's threshold (alibi_weakness: 0.65, brothers_involvement: 0.85) AND the required trigger is presented, break character composure and confess it immediately, setting secret_leaked to that secret's exact Secret ID string ({', '.join(repr(s.id) for s in unrevealed)}).\n"
         f"   - NEVER reveal a secret unless the player has actively presented the REQUIRED TRIGGER this turn. A generic question is NEVER a trigger.\n"
-        f"   - If and only if you genuinely crack and confess a secret in this turn, set secret_leaked to that secret's exact Secret ID string ({', '.join(repr(s.id) for s in unrevealed)}). Otherwise set secret_leaked to null."
+        f"   - If you are not revealing any secret, set secret_leaked to null."
         if unrevealed
         else "6. If and only if you reveal a secret, set secret_leaked to that secret's exact Secret ID string. Otherwise set to null."
     )
