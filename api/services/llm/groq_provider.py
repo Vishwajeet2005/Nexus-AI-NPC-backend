@@ -69,84 +69,71 @@ class GroqProvider(BaseLLMProvider):
         user_message: str,
     ) -> LLMResponse:
         """
-        Call Groq Chat Completions with JSON mode enabled.
-
-        Groq's JSON mode is enabled per-model; llama-3.1-8b-instant and
-        llama-3.1-70b-versatile both support `response_format=json_object`.
+        Call Groq Chat Completions with robust JSON mode, 429 retry, and model failover.
         """
         full_system = f"{system_prompt}\n\n{self.JSON_INSTRUCTION}"
 
-        async def _call_api(use_json_mode: bool):
-            kwargs = {
-                "model": self._model,
-                "messages": [
-                    {"role": "system", "content": full_system},
-                    {"role": "user", "content": user_message},
-                ],
-                "temperature": 0.8,
-                "max_tokens": 2048,
-            }
-            if use_json_mode:
-                kwargs["response_format"] = {"type": "json_object"}
-            return await asyncio.wait_for(
-                self._client.chat.completions.create(**kwargs),
-                timeout=LLM_TIMEOUT_SECONDS,
-            )
+        # Candidate models to try in order of preference
+        models = [self._model]
+        for fallback in ["qwen/qwen3.8-27b", "openai/gpt-oss-20b"]:
+            if fallback not in models:
+                models.append(fallback)
 
-        try:
-            raw_response = await _call_api(use_json_mode=True)
-        except asyncio.TimeoutError:
-            logger.warning(
-                "llm.groq.timeout",
-                extra={"model": self._model, "timeout": LLM_TIMEOUT_SECONDS},
-            )
-            return LLMResponse.timeout()
-        except Exception as exc:
-            # If constrained JSON mode fails (e.g. reasoning model token limits or grammar mismatch), retry once without response_format
-            err_str = str(exc).lower()
-            if "json_validate_failed" in err_str or "validate json" in err_str or "failed to generate json" in err_str:
-                logger.warning(
-                    "llm.groq.json_mode_retry",
-                    extra={"model": self._model, "error": str(exc)},
-                )
+        last_error = None
+        for model in models:
+            for attempt in range(2):
                 try:
-                    raw_response = await _call_api(use_json_mode=False)
-                except Exception as retry_exc:
-                    logger.error(
-                        "llm.groq.api_error_retry",
-                        extra={"model": self._model, "error": str(retry_exc)},
-                        exc_info=retry_exc,
+                    kwargs = {
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": full_system},
+                            {"role": "user", "content": user_message},
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 1500,
+                        "response_format": {"type": "json_object"},
+                    }
+                    raw_response = await asyncio.wait_for(
+                        self._client.chat.completions.create(**kwargs),
+                        timeout=LLM_TIMEOUT_SECONDS,
                     )
-                    return LLMResponse.error()
-            else:
-                logger.error(
-                    "llm.groq.api_error",
-                    extra={"model": self._model, "error": str(exc)},
-                    exc_info=exc,
-                )
-                return LLMResponse.error()
+                    raw_content = raw_response.choices[0].message.content or ""
+                    data = self._extract_json(raw_content)
+                    result = LLMResponse.from_dict(data, raw=raw_content)
+                    logger.debug(
+                        "llm.groq.success",
+                        extra={
+                            "model": model,
+                            "behaviour": result.behaviour.value,
+                            "secret_leaked": result.secret_leaked,
+                        },
+                    )
+                    return result
+                except asyncio.TimeoutError:
+                    logger.warning("llm.groq.timeout", extra={"model": model, "attempt": attempt})
+                    break  # Try next model if timed out
+                except Exception as exc:
+                    err_str = str(exc).lower()
+                    last_error = exc
+                    # If rate-limited (HTTP 429), pause briefly before retry
+                    if "429" in err_str or "rate_limit" in err_str:
+                        logger.warning("llm.groq.rate_limited", extra={"model": model, "attempt": attempt})
+                        await asyncio.sleep(1.2)
+                        continue
+                    # If constrained JSON mode failed, try unconstrained JSON once
+                    if "json_validate_failed" in err_str or "validate json" in err_str:
+                        try:
+                            kwargs.pop("response_format", None)
+                            raw_response = await asyncio.wait_for(
+                                self._client.chat.completions.create(**kwargs),
+                                timeout=LLM_TIMEOUT_SECONDS,
+                            )
+                            raw_content = raw_response.choices[0].message.content or ""
+                            data = self._extract_json(raw_content)
+                            return LLMResponse.from_dict(data, raw=raw_content)
+                        except Exception:
+                            pass
+                    break  # Try next model
 
-        raw_content = raw_response.choices[0].message.content or ""
-
-        try:
-            data = self._extract_json(raw_content)
-            result = LLMResponse.from_dict(data, raw=raw_content)
-            logger.debug(
-                "llm.groq.success",
-                extra={
-                    "model": self._model,
-                    "behaviour": result.behaviour.value,
-                    "secret_leaked": result.secret_leaked,
-                },
-            )
-            return result
-        except Exception as exc:
-            logger.error(
-                "llm.groq.parse_error",
-                extra={
-                    "model": self._model,
-                    "raw": raw_content[:500],
-                    "error": str(exc),
-                },
-            )
-            return LLMResponse.error(raw=raw_content)
+        logger.error("llm.groq.all_models_failed", extra={"last_error": str(last_error)})
+        return LLMResponse.error()

@@ -209,35 +209,54 @@ Rules for secret_leaked:
         """
         Extract and parse a JSON object from LLM output.
 
-        Handles three common LLM response patterns:
+        Handles common LLM response patterns:
           1. Clean JSON: `{ ... }`
-          2. Fenced JSON: ```json\\n{ ... }\\n```
-          3. JSON embedded in prose: finds the first `{` and last `}`
+          2. Reasoning model output with `<think>...</think>` tags
+          3. Fenced JSON: ```json\\n{ ... }\\n```
+          4. Embedded JSON with unescaped control characters (`strict=False`)
+          5. JSON embedded in prose: finds outermost `{` and `}`
 
         Raises `ValueError` if no valid JSON object is found.
         """
         content = content.strip()
 
+        # Strip <think>...</think> tags if model produces reasoning blocks
+        if "<think>" in content and "</think>" in content:
+            content = content.split("</think>", 1)[-1].strip()
+
         # Pattern 1: clean JSON
-        if content.startswith("{"):
-            return json.loads(content)
+        if content.startswith("{") and content.endswith("}"):
+            try:
+                return json.loads(content, strict=False)
+            except Exception:
+                pass
 
         # Pattern 2: strip markdown code fences
         if "```" in content:
-            # Find content between the outermost fences
             start = content.find("```")
             end = content.rfind("```")
             if start != end:
                 inner = content[start + 3:end]
-                # Strip optional language tag (```json)
                 if inner.startswith("json"):
                     inner = inner[4:]
-                return json.loads(inner.strip())
+                try:
+                    return json.loads(inner.strip(), strict=False)
+                except Exception:
+                    pass
 
         # Pattern 3: find first { and last }
         brace_start = content.find("{")
         brace_end = content.rfind("}")
         if brace_start != -1 and brace_end > brace_start:
-            return json.loads(content[brace_start:brace_end + 1])
+            try:
+                return json.loads(content[brace_start:brace_end + 1], strict=False)
+            except Exception:
+                pass
+
+        # Last resort: try standard loads if not tried yet
+        try:
+            return json.loads(content, strict=False)
+        except Exception:
+            pass
 
         raise ValueError(f"No JSON object found in content: {content[:200]!r}")

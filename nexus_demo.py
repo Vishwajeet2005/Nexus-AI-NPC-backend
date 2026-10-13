@@ -179,21 +179,35 @@ def render_hud(face_lines, behaviour, state, delta, history, latency=None, secre
 
         r_lines.append(f"{BOLD}TRANSCRIPT:{RESET}")
 
-        # Wrap dialogue entries cleanly into right pane
-        avail_rows = max(4, 25 - len(r_lines))
-        wrapped_entries = []
-        for speaker, text in history:
+        # Available rows for the transcript
+        avail_rows = max(4, len(face_lines) - len(r_lines))
+
+        # Format turns from newest to oldest so we never slice a turn in half
+        formatted_turns = []
+        total_rows_used = 0
+        for speaker, text in reversed(history):
             color = CYAN if speaker.lower() == "player" else WHITE
             prefix = f"{BOLD}{color}{speaker}:{RESET} "
             indent = " " * (len(speaker) + 2)
             w_text = textwrap.fill(text, width=right_w - 2, initial_indent=prefix, subsequent_indent=indent)
-            for l in w_text.split("\n"):
-                wrapped_entries.append(l)
-            wrapped_entries.append("")  # spacer between turns
+            turn_lines = w_text.split("\n")
+            needed = len(turn_lines) + (1 if formatted_turns else 0)
+            if total_rows_used + len(turn_lines) > avail_rows:
+                break
+            if formatted_turns:
+                turn_lines.append("")  # blank line spacer between turns
+            formatted_turns.append(turn_lines)
+            total_rows_used += needed
 
-        if len(wrapped_entries) > avail_rows:
-            wrapped_entries = wrapped_entries[-avail_rows:]
-        r_lines.extend(wrapped_entries)
+        transcript_lines = []
+        for turn_lines in reversed(formatted_turns):
+            transcript_lines.extend(turn_lines)
+
+        # Pad transcript so lines sit cleanly inside transcript area
+        while len(transcript_lines) < avail_rows:
+            transcript_lines.insert(0, "")
+
+        r_lines.extend(transcript_lines)
 
         # Pad to match face height (26 rows)
         while len(r_lines) < len(face_lines):
@@ -203,27 +217,31 @@ def render_hud(face_lines, behaviour, state, delta, history, latency=None, secre
         for i in range(len(face_lines)):
             f_l = face_lines[i]
             r_l = r_lines[i] if i < len(r_lines) else ""
-            combined.append(f"{f_l} {DIM}│{RESET} {r_l}")
+            combined.append(f"{f_l} {DIM}│{RESET} {r_l}\033[K")
 
+        divider = f"{DIM}{'─' * (face_w + 3 + right_w)}{RESET}\033[K"
+        combined.append(divider)
         return "\n".join(combined)
     else:
-        # Stacked layout for narrower terminals
+        # Stacked layout for narrower terminals (< 92 cols)
         out = []
-        out.append(f"{BOLD}NEXUS INTERROGATION: MARCUS WEBB  {badge}{RESET}")
-        out.append("\n".join(face_lines))
+        out.append(f"{BOLD}NEXUS INTERROGATION: MARCUS WEBB  {badge}{RESET}\033[K")
+        for f_l in face_lines:
+            out.append(f"{f_l}\033[K")
         st = as_dict(state)
         dt = as_dict(delta)
         for label, key, high_is_bad in STATE_ROWS:
             if key in st:
                 d_val = dt.get(key, 0.0)
                 d_str = f"({d_val:+.2f})" if d_val != 0.0 else "      "
-                out.append(f"  {label:<10} {bar(st[key], width=12, high_is_bad=high_is_bad)} {st[key]:.2f} {d_str}")
+                out.append(f"  {label:<10} {bar(st[key], width=12, high_is_bad=high_is_bad)} {st[key]:.2f} {d_str}\033[K")
         if secret:
-            out.append(f"  {BOLD}{RED}🚨 CRACKED: {secret} 🚨{RESET}")
-        out.append(f"{DIM}{'─' * 50}{RESET}")
+            out.append(f"  {BOLD}{RED}🚨 CRACKED: {secret} 🚨{RESET}\033[K")
+        out.append(f"{DIM}{'─' * min(term_w, 60)}{RESET}\033[K")
         for speaker, text in history[-3:]:
             color = CYAN if speaker.lower() == "player" else WHITE
-            out.append(f"  {BOLD}{color}{speaker}:{RESET} {text}")
+            out.append(f"  {BOLD}{color}{speaker}:{RESET} {text}\033[K")
+        out.append(f"{DIM}{'─' * min(term_w, 60)}{RESET}\033[K")
         return "\n".join(out)
 
 
@@ -317,7 +335,7 @@ async def run(args):
             sys.stdout.write("\033[2J\033[H")
             face_lines = get_portrait_lines(previous_behaviour)
             hud = render_hud(face_lines, previous_behaviour, curr_state, curr_delta, history)
-            sys.stdout.write(hud + "\n\n")
+            sys.stdout.write(hud + "\n\033[J")
             sys.stdout.flush()
         else:
             print(f"\n{BOLD}--- INTERROGATION: {name} ---{RESET}")
@@ -336,7 +354,9 @@ async def run(args):
                 sys.stdout.flush()
                 await type_out(line, args.type_delay)
             else:
-                line = (await asyncio.to_thread(input, f"\r\033[K{prompt_line}")).strip()
+                sys.stdout.write(f"\r\033[K{prompt_line}")
+                sys.stdout.flush()
+                line = (await asyncio.to_thread(input)).strip()
                 if line.lower() in ("quit", "exit"):
                     break
                 if not line:
@@ -346,7 +366,7 @@ async def run(args):
             if not args.no_face:
                 face_lines = get_portrait_lines(previous_behaviour)
                 hud = render_hud(face_lines, previous_behaviour, curr_state, curr_delta, history, secret=secret_cracked, status_msg="thinking...")
-                sys.stdout.write("\033[H" + hud + "\n\n")
+                sys.stdout.write("\033[H" + hud + "\n\033[J")
                 sys.stdout.flush()
             else:
                 sys.stdout.write(f"{DIM}  ...{RESET}")
@@ -376,7 +396,7 @@ async def run(args):
                     for frame_grid in get_morph_frames(previous_behaviour, curr_behaviour, frames=args.morph_frames):
                         frame_lines = render_ascii_lines(frame_grid)
                         hud = render_hud(frame_lines, curr_behaviour, curr_state, curr_delta, history, latency=latency, secret=secret_cracked)
-                        sys.stdout.write("\033[H" + hud + "\n")
+                        sys.stdout.write("\033[H" + hud + "\n\033[J")
                         sys.stdout.flush()
                         await asyncio.sleep(args.morph_delay)
 
@@ -387,7 +407,7 @@ async def run(args):
 
                 # Redraw persistent HUD with updated transcript
                 hud = render_hud(get_portrait_lines(curr_behaviour), curr_behaviour, curr_state, curr_delta, history, latency=latency, secret=secret_cracked)
-                sys.stdout.write("\033[H" + hud + "\n\n")
+                sys.stdout.write("\033[H" + hud + "\n\033[J")
                 sys.stdout.flush()
             else:
                 sys.stdout.write("\r\033[K")

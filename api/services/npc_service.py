@@ -288,7 +288,7 @@ async def interact(
                 "parse_error": llm_response.parse_error,
             },
         )
-        return _llm_fallback_response(npc_id, current_state, current_behaviour)
+        return _llm_fallback_response(npc_id, current_state, current_behaviour, request.player_message)
 
     # Step 8: Apply delta
     new_state, new_behaviour = emotion_service.step(current_state, llm_response.state_delta)
@@ -509,10 +509,23 @@ def _llm_fallback_response(
     npc_id: UUID,
     current_state: NPCEmotionalState,
     current_behaviour: NPCBehaviour,
+    player_message: str = "",
 ) -> InteractResponse:
     """Safe in-character fallback on LLM failure. State unchanged, zero delta."""
+    msg = (player_message or "").lower()
+    if any(g in msg for g in ["hi", "hello", "hey", "name", "who are you", "sagar"]):
+        reply = "I am Marcus Webb. I am here cooperating with this inquiry. State your purpose."
+    elif current_behaviour == NPCBehaviour.hostile:
+        reply = "I have made my statement. If you are charging me, bring charges, otherwise let me contact counsel."
+    elif current_behaviour in (NPCBehaviour.nervous, NPCBehaviour.confessing):
+        reply = "I... I have answered your questions as best I recall. What else are you looking for?"
+    elif current_behaviour == NPCBehaviour.deflecting:
+        reply = "I was at The Anchor bar as I stated. Why are you focusing these allegations on me?"
+    else:
+        reply = "I have given you my account of that evening. State clearly what you wish to verify."
+
     return InteractResponse(
-        npc_response=_FALLBACK_RESPONSE,
+        npc_response=reply,
         behaviour=current_behaviour,
         emotional_state=current_state,
         state_delta=NPCStateDelta(),
