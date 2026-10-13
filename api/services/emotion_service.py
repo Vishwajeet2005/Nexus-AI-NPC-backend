@@ -28,7 +28,7 @@ returns a valid enum value — it can never return None.
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, Optional
 
 from api.schemas.npc import NPCBehaviour, NPCEmotionalState, NPCStateDelta
 
@@ -130,6 +130,119 @@ class EmotionService:
         new_state = self.apply_delta(current, delta)
         new_behaviour = self.classify_behaviour(new_state)
         return new_state, new_behaviour
+
+    def resolve_dialogue_behaviour(
+        self,
+        state: NPCEmotionalState,
+        response_text: str = "",
+        declared_behaviour: Optional[NPCBehaviour] = None,
+        secret_leaked: Optional[str] = None,
+    ) -> NPCBehaviour:
+        """
+        Determine the NPC's observable behaviour mode based primarily on the
+        spoken response text and the LLM's declared behaviour, guarded by
+        server-side emotional and secret-reveal rules.
+
+        Priority order:
+          1. Secret reveal: If a secret was validated as leaked on this turn,
+             the NPC is unequivocally CONFESSING.
+          2. Confession guardrail: If the declared behaviour is 'confessing',
+             it is only accepted if the dialogue contains affirmative admissions.
+             Otherwise, it is grounded to 'hostile' or 'nervous'.
+          3. Hostility detection: If the response contains stonewalling,
+             refusal to answer, legal threats (badge number, warrant, attorney),
+             or declared 'hostile', the mode is HOSTILE.
+          4. Nervousness detection: If the response exhibits visible stammers
+             (e.g., 'I—I', multiple '...'), hedging, or declared 'nervous'
+             with elevated stress, the mode is NERVOUS.
+          5. Deflection detection: If the response answers with a counter-question,
+             challenges procedures/timestamps, redirects to third parties,
+             or declared 'deflecting', the mode is DEFLECTING.
+          6. Cooperative: If the response is calm, measured, offering direct
+             explanations, or declared 'cooperative' without hostility cues.
+          7. Baseline fallback: If dialogue cues are absent or ambiguous,
+             falls back to classify_behaviour(state).
+        """
+        # 1. Secret leaked -> unconditionally confessing
+        if secret_leaked:
+            return NPCBehaviour.confessing
+
+        resp_lower = (response_text or "").lower()
+
+        # Semantic markers
+        is_stonewalling = any(marker in resp_lower for marker in [
+            "nothing further to say", "done talking", "done playing games",
+            "refuse to answer", "will not answer", "no comment",
+            "speak with my attorney", "talk to my lawyer", "without counsel",
+            "without my attorney", "without my lawyer",
+            "produce a warrant", "produce a signed warrant", "badge number",
+            "file a formal complaint", "litigate", "lawsuit", "harassment",
+            "malicious prosecution", "violating every standard",
+            "violating my rights", "harass me"
+        ])
+
+        is_stammering = any(marker in resp_lower for marker in [
+            "i—i", "i... i", "i.. i", "look...", "wait...", "it is... it's",
+            "i didn't mean", "that doesn't make me"
+        ]) or (resp_lower.count("...") >= 2 and state.stress >= 0.40)
+
+        is_questioning = ("?" in response_text) or any(marker in resp_lower for marker in [
+            "are you suggesting", "do you have", "have you obtained",
+            "is this how", "are you genuinely", "how many", "what certified"
+        ])
+
+        admits_guilt = any(marker in resp_lower for marker in [
+            "i left", "i departed", "walked out of the anchor", "walked along the canal",
+            "adjusted the ledger", "altered the ledger", "tampered with the ledger",
+            "to save danny", "to protect danny", "leave danny alone",
+            "charge me", "arrest me", "danny didn't plan"
+        ]) and not any(denial in resp_lower for denial in [
+            "claim", "alleg", "did not", "didn't", "false", "dispute", "cannot override"
+        ])
+
+        # 2. Confessing guardrail:
+        if declared_behaviour == NPCBehaviour.confessing:
+            if admits_guilt:
+                return NPCBehaviour.confessing
+            # Declared confessing but text is stonewalling or denying:
+            if is_stonewalling or state.trust < 0.25:
+                return NPCBehaviour.hostile
+            elif is_stammering or state.stress >= 0.50:
+                return NPCBehaviour.nervous
+            else:
+                return NPCBehaviour.deflecting
+
+        # 3. Hostile checks:
+        if is_stonewalling:
+            return NPCBehaviour.hostile
+        if declared_behaviour == NPCBehaviour.hostile:
+            return NPCBehaviour.hostile
+
+        # 4. Nervous checks:
+        if is_stammering and state.stress >= 0.40:
+            return NPCBehaviour.nervous
+        if declared_behaviour == NPCBehaviour.nervous:
+            return NPCBehaviour.nervous
+
+        # 5. Deflecting checks:
+        if declared_behaviour == NPCBehaviour.deflecting:
+            if is_stammering and state.stress >= 0.60:
+                return NPCBehaviour.nervous
+            return NPCBehaviour.deflecting
+        if is_questioning and (state.suspicion >= 0.40 or state.stress >= 0.30):
+            return NPCBehaviour.deflecting
+
+        # 6. Cooperative checks:
+        if declared_behaviour == NPCBehaviour.cooperative:
+            return NPCBehaviour.cooperative
+
+        # 7. Fallback to state rule table
+        base_b = self.classify_behaviour(state)
+        if base_b == NPCBehaviour.confessing and not admits_guilt:
+            if state.trust < 0.25 or state.cooperation < 0.30:
+                return NPCBehaviour.hostile
+            return NPCBehaviour.nervous
+        return base_b
 
 
 # ── Module-level singleton ─────────────────────────────────────────────────────

@@ -426,7 +426,7 @@ async def interact(
         return _llm_fallback_response(npc_id, current_state, current_behaviour, request.player_message)
 
     # Step 8: Apply delta
-    new_state, new_behaviour = emotion_service.step(current_state, llm_response.state_delta)
+    new_state = emotion_service.apply_delta(current_state, llm_response.state_delta)
 
     # Step 9: Server-side secret validation
     # Use max(current_state.stress, new_state.stress) so a reveal triggered by this turn's escalation is honored
@@ -479,18 +479,18 @@ async def interact(
             if s.id == validated_secret else s
             for s in updated_secrets
         ]
-        new_behaviour = NPCBehaviour.confessing
         logger.info(
             "npc.secret_revealed",
             extra={"npc_id": str(npc_id), "secret_id": validated_secret, "stress": effective_stress},
         )
-    elif new_behaviour == NPCBehaviour.confessing:
-        any_revealed = any(s.is_revealed for s in updated_secrets)
-        if not any_revealed:
-            if new_state.trust < 0.25 or new_state.cooperation < 0.30:
-                new_behaviour = NPCBehaviour.hostile
-            else:
-                new_behaviour = NPCBehaviour.nervous
+
+    # Resolve observable behaviour directly from the dialogue and declared intent, guarded by server rules
+    new_behaviour = emotion_service.resolve_dialogue_behaviour(
+        state=new_state,
+        response_text=llm_response.npc_response,
+        declared_behaviour=llm_response.behaviour,
+        secret_leaked=validated_secret,
+    )
 
 
     # Steps 10-11: Write Postgres

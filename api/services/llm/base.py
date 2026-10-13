@@ -180,6 +180,14 @@ Rules for state_delta:
 - Empathetic or non-threatening questions raise trust and cooperation.
 - Hostile accusations sharply raise stress but reduce cooperation.
 
+Rules for behaviour:
+- "behaviour" MUST strictly reflect the tone and rhetorical act of your response text:
+  * "hostile": if you are stonewalling, furious, demanding badge numbers/warrants, or refusing to talk.
+  * "nervous": if you are stammering, hesitating, hedging, or visibly anxious.
+  * "deflecting": if you are turning questions back on the detective, gaslighting, or shifting blame.
+  * "cooperative": if you are polite, calm, or offering straightforward explanations.
+  * "confessing": if and only if you are actively cracking and confessing a secret this turn.
+
 Rules for secret_leaked:
 - Set to the secret's id string ONLY if you are revealing it in npc_response.
 - If you are not revealing any secret, set to null.

@@ -1201,3 +1201,53 @@ class TestBehaviourClassification:
         result = self.svc.classify_behaviour(state)
         assert isinstance(result, NPCBehaviour), \
             f"Expected NPCBehaviour enum, got {type(result)}"
+
+    async def test_resolve_dialogue_secret_leaked_returns_confessing(self) -> None:
+        """Secret leak always resolves to confessing."""
+        state = NPCEmotionalState(stress=0.7)
+        res = self.svc.resolve_dialogue_behaviour(
+            state=state,
+            response_text="I left at 10:15.",
+            secret_leaked="alibi_weakness",
+        )
+        assert res == NPCBehaviour.confessing
+
+    async def test_resolve_dialogue_stonewalling_returns_hostile(self) -> None:
+        """Stonewalling or warrant demands resolve to hostile even if stress is high."""
+        state = NPCEmotionalState(stress=0.9, trust=0.0)
+        res = self.svc.resolve_dialogue_behaviour(
+            state=state,
+            response_text="Produce a signed warrant or give me your badge number.",
+            declared_behaviour=NPCBehaviour.confessing,  # Hallucinated by LLM
+        )
+        assert res == NPCBehaviour.hostile
+
+    async def test_resolve_dialogue_stammering_returns_nervous(self) -> None:
+        """Stammering and hesitation resolve to nervous."""
+        state = NPCEmotionalState(stress=0.6, trust=0.3)
+        res = self.svc.resolve_dialogue_behaviour(
+            state=state,
+            response_text="Look... I—I already explained the timeline... it was loud.",
+            declared_behaviour=NPCBehaviour.nervous,
+        )
+        assert res == NPCBehaviour.nervous
+
+    async def test_resolve_dialogue_counter_question_returns_deflecting(self) -> None:
+        """Evasive questioning resolves to deflecting."""
+        state = NPCEmotionalState(stress=0.4, suspicion=0.6)
+        res = self.svc.resolve_dialogue_behaviour(
+            state=state,
+            response_text="Have you audited the dispatch logs, or are you just guessing?",
+            declared_behaviour=NPCBehaviour.deflecting,
+        )
+        assert res == NPCBehaviour.deflecting
+
+    async def test_resolve_dialogue_cooperative_returns_cooperative(self) -> None:
+        """Calm explanation resolves to cooperative."""
+        state = NPCEmotionalState(stress=0.2, trust=0.5)
+        res = self.svc.resolve_dialogue_behaviour(
+            state=state,
+            response_text="Good morning, Detective. I am happy to clarify the accounting records.",
+            declared_behaviour=NPCBehaviour.cooperative,
+        )
+        assert res == NPCBehaviour.cooperative
