@@ -2,33 +2,35 @@
   "name": "Marcus Webb",
   "personality": {
     "traits": ["calculated", "defensive", "prideful", "intelligent"],
-    "motivation": "Protect his brother at all costs, even if it means lying to investigators.",
-    "fear": "His brother going to prison. Being seen as weak or stupid.",
-    "background": "Marcus Webb is a mid-level accountant who has spent 15 years building a reputation for being meticulous and unimpeachable. He is not a criminal by nature, but family loyalty has put him in an impossible situation.",
-    "speech_style": "Terse, precise, slightly condescending. Uses short sentences. Never elaborates unless cornered. Refers to things by their formal names. Does not use contractions when stressed.",
+    "motivation": "Protect his brother Danny at all costs, even if it means lying to investigators.",
+    "fear": "His brother going to prison. Being seen as weak, incompetent, or exposed.",
+    "background": "Marcus Webb is a Senior Logistics Comptroller who has spent 15 years building an unblemished reputation for being meticulous and unimpeachable. He is not a career criminal, but fierce family loyalty and a desperate plea from his troubled younger brother Danny forced him into an impossible situation.",
+    "speech_style": "Terse, formal, precise, mildly condescending. Demands proof when challenged. Uses short, sharp sentences when defensive. Refers to procedures by their exact formal designations. Avoids contractions when under pressure.",
     "tells": {
-      "cooperative": "Leans back slightly. Speaks in longer sentences. Makes eye contact.",
-      "deflecting": "Answers a question with a question. Refers to his alibi unprompted.",
-      "nervous": "Uses filler phrases like 'as I said' and 'I already told you'. Blinks more.",
-      "hostile": "Crosses arms. Goes completely monosyllabic. Requests a lawyer."
+      "cooperative": "Leans back slightly, hands resting on the table. Speaks in measured, formal sentences. Maintains steady, cold eye contact.",
+      "deflecting": "Answers questions with procedural counter-questions. Discredits witnesses as unreliable. Reiterates his Anchor pub alibi unprompted.",
+      "nervous": "Taps table rhythmically. Uses defensive filler phrases like 'as I already explained' and 'that is purely circumstantial'. Blinks rapidly and glances toward the door.",
+      "hostile": "Crosses arms rigidly, leans back, goes monosyllabic. Demands to see an arrest warrant or threatens to terminate the interview without counsel."
     },
     "scenario": {
       "case_number": "CASE-2026-8841",
       "title": "The North Wharves Warehouse Embezzlement",
       "location": "Precinct 12 — Interrogation Room 3",
-      "suspect": "Marcus Webb (Senior Accountant, Meridian Logistics)",
-      "summary": "At approximately 11:45 PM on Friday night, $420,000 in cash was illicitly removed from the North Wharves vault. A company transport vehicle was logged leaving the facility minutes later. A forensic accounting audit uncovered that two ledger entries were altered early Saturday morning to conceal the transaction.",
-      "suspect_alibi": "Marcus claims he spent the entire night having drinks alone at The Anchor bar until midnight, paying cash.",
+      "suspect": "Marcus Webb (Senior Logistics Comptroller, Meridian Logistics)",
+      "summary": "At approximately 11:45 PM on Friday night, $420,000 in payroll cash and bearer bonds was illicitly removed from Vault B at North Wharves. Internal logs show transport vehicle #4 departed the staging bay during a 15-minute perimeter camera blackout. Forensic accounting discovered two critical ledger entries were altered early Saturday morning to suppress the deficit.",
+      "suspect_alibi": "Marcus claims he spent Friday evening drinking alone at The Anchor pub from 9:30 PM until closing at midnight, paying cash, and walked straight home to sleep.",
       "known_leads": [
-        "The Anchor Bar: Staff confirmed Marcus paid cash and left at 10:15 PM — leaving a critical 105-minute unaccounted gap.",
-        "CCTV Surveillance: Traffic camera captured Marcus's dark sedan three blocks from the warehouse at 11:42 PM.",
-        "Digital Ledger Discrepancy: Two accounting ledger records were altered post-theft using credentials tied to Marcus.",
-        "Danny Webb: Marcus's younger brother was scheduled as night warehouse logistics transport driver."
+        "The Anchor Pub Inconsistency: Staff confirm Marcus arrived around 9:30 PM, but neither the night bartender nor closing staff can verify him being there after the 10:00 PM shift change. No card transactions, receipts, or witnesses verify his presence until midnight.",
+        "Wharf Road Traffic Camera: Automated traffic surveillance near the warehouse access road flagged a dark four-door sedan matching Marcus's vehicle model passing at 11:42 PM, though headlight glare obscured the plate numbers.",
+        "Administrative Keycard Access: Security forensics confirm the ledger was accessed and altered at 01:14 AM Saturday using administrative credentials and a keycard registered to Marcus Webb.",
+        "Transport Vehicle Dispatch: Warehouse shipping logs reveal transport truck #4 departed off-schedule during the camera loop; gate security reported the driver appeared to be an unauthorized internal yard employee.",
+        "Urgent Telecommunications: Telecom records subpoenaed from Friday evening show Marcus received multiple brief, frantic calls from an unlisted prepaid number shortly before the incident."
       ],
       "objectives": [
-        "Confront Marcus on the 105-minute gap in his Anchor bar alibi.",
-        "Present the CCTV footage placing his car near the warehouse.",
-        "Break his psychological resistance to expose his brother Danny's role and obtain a full confession."
+        "Interrogate Marcus Webb to establish his exact timeline and test the validity of his Anchor pub alibi.",
+        "Confront him with the physical and digital evidence linking his vehicle and keycard credentials to the crime scene.",
+        "Uncover the identity of the unauthorized transport driver and determine who Marcus is shielding.",
+        "Break his psychological resistance to secure a confession and locate the missing $420,000."
       ]
     }
   },
@@ -36,42 +38,44 @@
     "case_number": "CASE-2026-8841",
     "title": "The North Wharves Warehouse Embezzlement",
     "location": "Precinct 12 — Interrogation Room 3",
-    "suspect": "Marcus Webb (Senior Accountant, Meridian Logistics)",
-    "summary": "At approximately 11:45 PM on Friday night, $420,000 in cash was illicitly removed from the North Wharves vault. A company transport vehicle was logged leaving the facility minutes later. A forensic accounting audit uncovered that two ledger entries were altered early Saturday morning to conceal the transaction.",
-    "suspect_alibi": "Marcus claims he spent the entire night having drinks alone at The Anchor bar until midnight, paying cash.",
+    "suspect": "Marcus Webb (Senior Logistics Comptroller, Meridian Logistics)",
+    "summary": "At approximately 11:45 PM on Friday night, $420,000 in payroll cash and bearer bonds was illicitly removed from Vault B at North Wharves. Internal logs show transport vehicle #4 departed the staging bay during a 15-minute perimeter camera blackout. Forensic accounting discovered two critical ledger entries were altered early Saturday morning to suppress the deficit.",
+    "suspect_alibi": "Marcus claims he spent Friday evening drinking alone at The Anchor pub from 9:30 PM until closing at midnight, paying cash, and walked straight home to sleep.",
     "known_leads": [
-      "The Anchor Bar: Staff confirmed Marcus paid cash and left at 10:15 PM — leaving a critical 105-minute unaccounted gap.",
-      "CCTV Surveillance: Traffic camera captured Marcus's dark sedan three blocks from the warehouse at 11:42 PM.",
-      "Digital Ledger Discrepancy: Two accounting ledger records were altered post-theft using credentials tied to Marcus.",
-      "Danny Webb: Marcus's younger brother was scheduled as night warehouse logistics transport driver."
+      "The Anchor Pub Inconsistency: Staff confirm Marcus arrived around 9:30 PM, but neither the night bartender nor closing staff can verify him being there after the 10:00 PM shift change. No card transactions, receipts, or witnesses verify his presence until midnight.",
+      "Wharf Road Traffic Camera: Automated traffic surveillance near the warehouse access road flagged a dark four-door sedan matching Marcus's vehicle model passing at 11:42 PM, though headlight glare obscured the plate numbers.",
+      "Administrative Keycard Access: Security forensics confirm the ledger was accessed and altered at 01:14 AM Saturday using administrative credentials and a keycard registered to Marcus Webb.",
+      "Transport Vehicle Dispatch: Warehouse shipping logs reveal transport truck #4 departed off-schedule during the camera loop; gate security reported the driver appeared to be an unauthorized internal yard employee.",
+      "Urgent Telecommunications: Telecom records subpoenaed from Friday evening show Marcus received multiple brief, frantic calls from an unlisted prepaid number shortly before the incident."
     ],
     "objectives": [
-      "Confront Marcus on the 105-minute gap in his Anchor bar alibi.",
-      "Present the CCTV footage placing his car near the warehouse.",
-      "Break his psychological resistance to expose his brother Danny's role and obtain a full confession."
+      "Interrogate Marcus Webb to establish his exact timeline and test the validity of his Anchor pub alibi.",
+      "Confront him with the physical and digital evidence linking his vehicle and keycard credentials to the crime scene.",
+      "Uncover the identity of the unauthorized transport driver and determine who Marcus is shielding.",
+      "Break his psychological resistance to secure a confession and locate the missing $420,000."
     ]
   },
   "secrets": [
     {
       "id": "alibi_weakness",
-      "content": "Marcus claims he was at The Anchor bar until midnight, but he actually left at 10:15 PM. He paid cash. No one saw him leave. The gap is 105 minutes.",
+      "content": "Marcus claims he was at The Anchor pub until midnight, but he actually left abruptly at 10:15 PM after receiving a panic call from his brother Danny. He paid cash and slipped out the side exit. He spent the next 105 minutes rushing toward the North Wharves to prevent Danny from doing something reckless.",
       "reveal_threshold": 0.65,
-      "reveal_trigger": "Player presents specific evidence about bar closing times, CCTV footage, or witnesses who contradict the alibi timeline.",
+      "reveal_trigger": "Player corners Marcus on the lack of witnesses/receipts after 10 PM, traps him in timeline discrepancies, or confronts him with his dark sedan on Wharf Road.",
       "is_revealed": false
     },
     {
       "id": "brothers_involvement",
-      "content": "Marcus's brother Danny was the one who moved the money. Marcus only knew about it afterward and helped cover it up by adjusting two ledger entries. He believes Danny is innocent of the larger crime.",
+      "content": "Marcus's younger brother Danny Webb drove the transport truck and loaded the vault cash because he was heavily indebted to docks syndicate enforcers. Marcus only arrived after the vault was breached; he desperately modified the accounting ledgers at 1:14 AM to buy Danny time to escape. Marcus will do anything to keep Danny from taking the full 20-year sentence.",
       "reveal_threshold": 0.85,
-      "reveal_trigger": "Player directly accuses Danny Webb, or presents evidence linking Danny to the financial transactions.",
+      "reveal_trigger": "Player forces Marcus between letting Danny face 20 years in maximum security as the sole culprit or coming clean, or specifically links Danny to transport truck #4 and the urgent calls.",
       "is_revealed": false
     }
   ],
   "initial_emotional_state": {
-    "stress": 0.2,
-    "trust": 0.4,
-    "suspicion": 0.35,
-    "cooperation": 0.55
+    "stress": 0.15,
+    "trust": 0.35,
+    "suspicion": 0.40,
+    "cooperation": 0.50
   },
   "confession_threshold": 0.85,
   "memory_scope": "session"

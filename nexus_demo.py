@@ -69,12 +69,12 @@ GAME_ID = "8cc751bb-10fc-4a4d-ab96-b0872e97d462"
 # Your side of the conversation for --auto. Edit freely: you script the player,
 # but Marcus's replies and every number on screen come from the real backend.
 SCRIPTED_LINES = [
-    "Thanks for coming in, Mr. Webb. Take a seat. I just want to understand your night.",
-    "You told us you were at the restaurant. Walk me through the evening.",
-    "A minute ago you said restaurant. So why is there no record of you being there?",
-    "We have you on CCTV three blocks from the warehouse at 11:42 PM.",
-    "Your brother was driving that night, wasn't he? Is he who you're protecting?",
-    "Your lawyer isn't coming, Marcus. Tell me what really happened at the warehouse.",
+    "Thanks for coming in, Mr. Webb. Take a seat. Walk me through your Friday evening.",
+    "You claim you were drinking at The Anchor pub until midnight, but the staff says no one saw you after 10 PM. Where were you?",
+    "A dark sedan matching your vehicle was flagged heading down Wharf Road toward the warehouse at 11:42 PM. Care to explain that?",
+    "Someone used your administrative keycard to wipe the vault ledger at 1:14 AM. You expect us to believe that was a coincidence?",
+    "We pulled your phone records from Friday night. Multiple frantic calls from an unlisted number right before the robbery. Who called you, Marcus?",
+    "Transport truck #4 was driven by an insider. If you don't start talking, you're taking the full 20-year sentence for grand larceny alone. Are you really throwing your life away to shield Danny?",
 ]
 
 # ---------------------------------------------------------------- styling
