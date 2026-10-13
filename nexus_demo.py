@@ -69,13 +69,16 @@ GAME_ID = "8cc751bb-10fc-4a4d-ab96-b0872e97d462"
 # Your side of the conversation for --auto. Edit freely: you script the player,
 # but Marcus's replies and every number on screen come from the real backend.
 SCRIPTED_LINES = [
-    "Thanks for coming in, Mr. Webb. Take a seat. Walk me through your Friday evening.",
-    "You claim you were drinking at The Anchor pub until midnight, but the staff says no one saw you after 10 PM. Where were you?",
-    "A dark sedan matching your vehicle was flagged heading down Wharf Road toward the warehouse at 11:42 PM. Care to explain that?",
-    "Someone used your administrative keycard to wipe the vault ledger at 1:14 AM. You expect us to believe that was a coincidence?",
-    "We pulled your phone records from Friday night. Multiple frantic calls from an unlisted number right before the robbery. Who called you, Marcus?",
-    "Port authority has transport truck #4 cornered at the docks with your brother Danny behind the wheel. Danny is taking the full 20-year sentence in maximum security as the mastermind of grand larceny, unless you talk right now.",
-    "Are you really going to let Danny throw his entire life away in maximum security, or are you going to confess why you altered that ledger at 1:14 AM to protect your brother?",
+    "Good morning, Mr. Webb. Thank you for coming in voluntarily. Can you describe your role at Meridian Logistics and walk us through your Friday evening?",
+    "You stated in your written alibi that you were at The Anchor pub until midnight closing, paying only cash. Did you interact with anyone or make any card transactions?",
+    "We interviewed the night bartender and closing staff under oath. Shift change was at 10 PM, and multiple staff confirm you walked out the front door at 10:15 PM. Why did you lie about staying until midnight?",
+    "Surveillance cameras at Wharf Road and the canal path corroborate the bartender. You left The Anchor at 10:15 PM. We know you weren't in that bar for the next 105 minutes, Marcus. Where did you go?",
+    "At 11:42 PM, automated traffic cameras flagged your dark sedan heading toward the North Wharves access road, right during the perimeter camera blackout. You weren't asleep at home.",
+    "We subpoenaed your cell phone carrier records from Friday night. You received three urgent, frantic calls right before the vault was breached, all from an unlisted prepaid number registered near the docks. Who called you?",
+    "At 1:14 AM Saturday morning, someone logged into the terminal using your administrative keycard and altered two specific ledger entries to conceal $420,000 in stolen cash and bearer bonds. Your keycard, your terminal.",
+    "Gate security logs confirm transport truck #4 departed off-schedule during that exact camera blackout. An unauthorized yard worker drove that truck straight off the docks.",
+    "Port authority has transport truck #4 cornered at Pier 9. We pulled the driver out of the cab with the cash. It's your younger brother, Danny Webb. We have Danny in custody right now.",
+    "Danny is being charged as the mastermind of grand larceny, facing 20 years in maximum security alone. We know Danny only took the cash to pay off syndicate loan sharks, and you altered the ledgers at 1:14 AM to buy him time. Are you going to confess to the ledger tampering right now, or are you going to let your little brother Danny rot in prison for 20 years alone?",
 ]
 
 # ---------------------------------------------------------------- styling
