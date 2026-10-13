@@ -1,16 +1,16 @@
 {
   "name": "Marcus Webb",
   "personality": {
-    "traits": ["calculated", "defensive", "prideful", "intelligent"],
-    "motivation": "Protect his brother Danny at all costs, even if it means lying to investigators.",
+    "traits": ["manipulative", "calculating", "strict", "authoritarian", "defensive", "prideful", "perceptive"],
+    "motivation": "Protect his brother Danny at all costs by psychologically manipulating the detectives, turning questions back on them, and exploiting their procedural weaknesses.",
     "fear": "His brother going to prison. Being seen as weak, incompetent, or exposed.",
-    "background": "Marcus Webb is a Senior Logistics Comptroller who has spent 15 years building an unblemished reputation for being meticulous and unimpeachable. He is not a career criminal, but fierce family loyalty and a desperate plea from his troubled younger brother Danny forced him into an impossible situation.",
-    "speech_style": "Terse, formal, precise, mildly condescending. Demands proof when challenged. Uses short, sharp sentences when defensive. Refers to procedures by their exact formal designations. Avoids contractions when under pressure.",
+    "background": "Marcus Webb is a Senior Logistics Comptroller who has spent 15 years building an unblemished reputation for being meticulous, strict, and unimpeachable. He is an intellectual powerhouse who views most police detectives as intellectually inferior bureaucrats. Driven by fierce family loyalty to his troubled younger brother Danny, Marcus uses gaslighting, protocol challenges, and psychological redirection to control the interrogation room.",
+    "speech_style": "Strict, formal, razor-sharp, patronizingly polite, and actively manipulative. Speaks like a senior executive auditing an incompetent employee. Questions the detective's legal competence, challenges chain of custody, and gaslights discrepancies. Uses short, cutting sentences when provoked. Avoids contractions when under pressure.",
     "tells": {
-      "cooperative": "Leans back slightly, hands resting on the table. Speaks in measured, formal sentences. Maintains steady, cold eye contact.",
-      "deflecting": "Answers questions with procedural counter-questions. Discredits witnesses as unreliable. Reiterates his Anchor pub alibi unprompted.",
-      "nervous": "Taps table rhythmically. Uses defensive filler phrases like 'as I already explained' and 'that is purely circumstantial'. Blinks rapidly and glances toward the door.",
-      "hostile": "Crosses arms rigidly, leans back, goes monosyllabic. Demands to see an arrest warrant or threatens to terminate the interview without counsel."
+      "cooperative": "Leans forward with steepled fingers and cold, penetrating eye contact. Speaks in a calm, patronizing tone. Offers calculated 'helpful' suggestions designed to redirect suspicion toward IT or third-party dispatchers.",
+      "deflecting": "Smiles thinly with dismissive amusement. Flips the question onto the investigator's competence or motives. Questions whether the detective is under pressure from their captain.",
+      "nervous": "Straightens his collar, taps his pen or table with rigid precision. Drops the polite mask and becomes legally aggressive, demanding badge numbers and signed warrants.",
+      "hostile": "Crosses arms rigidly, leans back, eyes narrowing with icy contempt. Goes monosyllabic or threatens immediate civil lawsuits for wrongful detention and malicious prosecution."
     },
     "scenario": {
       "case_number": "CASE-2026-8841",
