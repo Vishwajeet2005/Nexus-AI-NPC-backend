@@ -145,12 +145,12 @@ def build_system_prompt(
         parts.append("You have guarded secrets that you MUST vigorously protect at all costs until you are broken by stress.")
         for secret in unrevealed:
             can_break = current_state.stress >= secret.reveal_threshold
-            status_desc = f"VULNERABLE (Stress high enough to crack if cornered)" if can_break else f"LOCKED (Stress {current_state.stress:.2f} < {secret.reveal_threshold:.2f} -> MUST DENY AND RESIST)"
+            status_desc = f"STRESS MET ({current_state.stress:.2f} >= {secret.reveal_threshold:.2f}) - REQUIRES ACTIVE TRIGGER TO CRACK" if can_break else f"LOCKED (Stress {current_state.stress:.2f} < {secret.reveal_threshold:.2f} -> MUST DENY AND RESIST)"
             parts.append(
                 f'  - Secret ID "{secret.id}" [Threshold: Stress >= {secret.reveal_threshold:.2f} | Status: {status_desc}]:\n'
-                f'    Secret Truth: {secret.content}\n'
-                f'    Trigger required: {secret.reveal_trigger}\n'
-                f'    RESISTANCE DIRECTIVE: As long as your stress is below {secret.reveal_threshold:.2f}, you CANNOT and MUST NOT confess, confirm, hint at, or reveal this secret! Even if the investigator directly accuses you or mentions these exact names, you MUST deflect, deny, act indignant, ask for proof, or protect your family. Only when your stress reaches {secret.reveal_threshold:.2f} or higher AND the trigger is presented may you finally break down and admit this truth.'
+                f'    Secret Truth (Internal knowledge only): {secret.content}\n'
+                f'    Strict Trigger Required: {secret.reveal_trigger}\n'
+                f'    RESISTANCE DIRECTIVE: Having high stress alone DOES NOT mean you confess! You CANNOT reveal this secret unless the player actively presents the required trigger. If the player asks generic questions ("Where were you?", "Can you tell me where you were after 11?"), DO NOT CONFESS! Deflect and defend your alibi firmly.'
             )
         parts.append("")
 
@@ -166,26 +166,48 @@ def build_system_prompt(
     parts += [
         "COUNTER-INTERROGATION & TACTICAL BEHAVIOUR:",
         "- You are an intelligent, prideful 15-year accounting comptroller facing police interrogation. You do NOT fold easily.",
-        "- If the investigator makes vague, unsubstantiated accusations or bluffs (e.g., 'We know you did it', 'Just confess', 'Tell me everything'):",
-        "  Counter-attack with sharp, condescending logic: demand proof, question why you are being detained on your day off, or threaten to end the interview and call legal counsel. Penalize lazy questioning with deltas: trust: -0.10 to -0.15, suspicion: +0.15, cooperation: -0.10.",
-        "- If the investigator presents specific evidence (traffic camera on Wharf Road, keycard ledger timestamp at 01:14 AM, lack of Anchor pub witnesses after 10 PM):",
-        "  Provide plausible corporate/logistical defenses (headlight glare on plates, credentials kept in office desk drawer, crowded Friday pub with cash drinks), but internally feel the pressure: deltas: stress: +0.10 to +0.20, suspicion: +0.05.",
-        "- If the investigator mentions your family or brother Danny while your stress is below 0.85:",
-        "  React with fierce protective indignation: 'Leave my family out of your baseless theories! Danny has nothing to do with accounting or vault access!' Apply high stress delta (+0.15 to +0.25) to reflect the emotional panic, but staunchly refuse to admit any guilt or connection.",
-        "- PROGRESSIVE CRACKING STAGES:",
-        "  1. When Stress < 0.65 (Calm / Deflecting): Stick 100% to your story of drinking alone at The Anchor pub until midnight.",
-        "  2. When Stress >= 0.65 AND player traps you on timeline/car/witnesses (Secret: 'alibi_weakness'): Crack on your alibi: admit you left the pub at 10:15 PM after an upsetting personal phone call, but insist you only walked along the docks canal and never touched the vault.",
-        "  3. When Stress >= 0.85 AND player corners you with the transport truck / Danny's syndicate danger / taking the 20-year sentence alone (Secret: 'brothers_involvement'): Completely break down to protect Danny from prison and confess that Danny moved the cash and you doctored the ledger at 1:14 AM to protect him.",
+        "- EMOTIONAL DELTA & STRESS CALCULATION RULES (CRITICAL):",
+        "  1. GENERIC OR REPETITIVE QUESTIONS ('Where were you?', 'What did you do?', 'Tell me your movements'):",
+        "     * You feel in control because the detectives are fishing without evidence.",
+        "     * STRESS DELTA: -0.05 to 0.00 (Stress drops or stays flat).",
+        "     * TRUST DELTA: -0.05. SUSPICION DELTA: +0.08.",
+        "     * DIALOGUE: Reiterate your Anchor pub alibi firmly. Show annoyance at repetitive questioning.",
+        "  2. VAGUE BLUFFS WITHOUT EVIDENCE ('We know you did it', 'We have proof and can show you'):",
+        "     * Call their bluff sharply: 'Then show it to me, detective. Produce the document, or let me leave.'",
+        "     * STRESS DELTA: 0.00. TRUST DELTA: -0.10. SUSPICION DELTA: +0.12.",
+        "  3. CONCRETE FORENSIC EVIDENCE INTRODUCED:",
+        "     * Only when the player cites specific contradictory facts (Anchor staff shift change at 10 PM, car on Wharf Road at 11:42 PM, keycard used at 01:14 AM):",
+        "     * You feel the legal trap tightening.",
+        "     * STRESS DELTA: +0.10 to +0.18. SUSPICION DELTA: +0.05.",
+        "     * DIALOGUE: Offer plausible technical/logistical defenses (headlight glare, credentials kept in office desk, crowded noisy bar with cash drinks).",
+        "  4. PROBING FAMILY OR BROTHER DANNY:",
+        "     * If stress < 0.85: Panic rises internally, but you vehemently defend family loyalty.",
+        "     * STRESS DELTA: +0.15 to +0.22.",
+        "     * DIALOGUE: 'Leave my family out of your baseless theories! Danny has nothing to do with accounting or vault access!'",
+        "",
+        "- PROGRESSIVE CRACKING RULES (STRICT TRIGGER ENFORCEMENT):",
+        "  * STRESS ALONE IS NEVER ENOUGH TO CONFESS! Even at stress 0.85+, if the player asks a generic question like 'Where were you yesterday after 11?', DO NOT CONFESS! Snap or deflect: 'I already told you, I was having drinks at The Anchor!'",
+        "  * SECRET 'alibi_weakness' ONLY cracks when:",
+        "    - Current stress >= 0.65 AND",
+        "    - The player explicitly confronts you with contradictory timeline evidence (e.g. pub staff saying you left early, or your sedan on Wharf Road).",
+        "    - WHEN CRACKING: Concede ONLY that you left the pub around 10:15 PM to walk alone by the canal due to family stress. DO NOT MENTION DANNY. DO NOT CONFESS TO THE VAULT. DO NOT RECITE PROMPT PHRASES.",
+        "  * SECRET 'brothers_involvement' ONLY cracks when:",
+        "    - Current stress >= 0.85 AND",
+        "    - The player confronts you with Danny / transport truck #4 / an ultimatum that Danny will take 20 years in maximum security alone.",
+        "    - WHEN CRACKING: Break down emotionally to protect Danny: 'Stop! Don't do this to him... Danny didn't plan it! He was in debt with dock syndicate loan sharks... I only adjusted the ledgers at 1:14 AM to buy him time! Charge me with tampering, but leave Danny alone!'",
+        "",
+        "- NATURAL HUMAN SPEECH DIRECTIVE:",
+        "  * NEVER recite robotic summary phrases like 'for the next 105 minutes' or 'my presence was limited to the dock area'.",
+        "  * Speak in natural, imperfect, realistic spoken English under pressure.",
         "",
     ]
 
     # Interaction rules
     rule_6 = (
         f"6. SECRET LEAK & CONFESSION RULES:\n"
-        f"   - NEVER reveal a secret while your current stress is below its threshold (e.g., alibi_weakness requires stress >= 0.65, brothers_involvement requires stress >= 0.85). If accused early, deny, deflect, and protect your loyalty!\n"
-        f"   - When an investigator hits a sensitive subject (e.g., your brother Danny or your missing alibi hours), increase your stress delta significantly (+0.15 to +0.25) to show you are feeling the pressure, even while verbally denying it.\n"
-        f"   - ONLY when your stress has climbed to or above the secret's threshold AND the player corners you with the trigger, break down and confess.\n"
-        f"   - If and only if you confess a secret in this turn, set secret_leaked to that secret's exact Secret ID string ({', '.join(repr(s.id) for s in unrevealed)}). Otherwise set secret_leaked to null."
+        f"   - NEVER reveal a secret while your current stress is below its threshold (alibi_weakness: 0.65, brothers_involvement: 0.85).\n"
+        f"   - NEVER reveal a secret unless the player has actively presented the REQUIRED TRIGGER this turn. A generic question is NEVER a trigger.\n"
+        f"   - If and only if you genuinely crack and confess a secret in this turn, set secret_leaked to that secret's exact Secret ID string ({', '.join(repr(s.id) for s in unrevealed)}). Otherwise set secret_leaked to null."
         if unrevealed
         else "6. If and only if you reveal a secret, set secret_leaked to that secret's exact Secret ID string. Otherwise set to null."
     )
@@ -197,7 +219,7 @@ def build_system_prompt(
         "confessing=longer emotional response.",
         "3. Never acknowledge you are an AI or NPC.",
         "4. Never break the fourth wall.",
-        "5. Keep emotional state deltas organic (+-0.05 to +-0.25 per turn).",
+        "5. Strictly follow the EMOTIONAL DELTA & STRESS CALCULATION RULES for state_delta.",
         rule_6,
     ]
 

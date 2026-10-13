@@ -58,16 +58,16 @@
   "secrets": [
     {
       "id": "alibi_weakness",
-      "content": "Marcus claims he was at The Anchor pub until midnight, but he actually left abruptly at 10:15 PM after receiving a panic call from his brother Danny. He paid cash and slipped out the side exit. He spent the next 105 minutes rushing toward the North Wharves to prevent Danny from doing something reckless.",
+      "content": "Marcus lied about staying at The Anchor pub until midnight. He actually paid cash and slipped out around 10:15 PM to walk along the docks canal to clear his head after personal family stress. He insists he never entered the warehouse vault himself. Note: Even after revealing this, Marcus staunchly conceals Danny's involvement and denies any crime.",
       "reveal_threshold": 0.65,
-      "reveal_trigger": "Player corners Marcus on the lack of witnesses/receipts after 10 PM, traps him in timeline discrepancies, or confronts him with his dark sedan on Wharf Road.",
+      "reveal_trigger": "The investigator must explicitly corner Marcus with contradictory evidence regarding his timeline (e.g. pub staff saying he wasn't there after 10 PM, or his car spotted on Wharf Road). Vague questions like 'Where were you?' or generic accusations do NOT trigger this.",
       "is_revealed": false
     },
     {
       "id": "brothers_involvement",
-      "content": "Marcus's younger brother Danny Webb drove the transport truck and loaded the vault cash because he was heavily indebted to docks syndicate enforcers. Marcus only arrived after the vault was breached; he desperately modified the accounting ledgers at 1:14 AM to buy Danny time to escape. Marcus will do anything to keep Danny from taking the full 20-year sentence.",
+      "content": "Marcus's younger brother Danny Webb was the night driver who took transport truck #4 to steal the cash to pay off docks loan sharks. Marcus only discovered this afterward and altered the ledgers at 1:14 AM to buy Danny time to escape. Marcus confesses this only to protect Danny from facing 20 years in maximum security alone.",
       "reveal_threshold": 0.85,
-      "reveal_trigger": "Player forces Marcus between letting Danny face 20 years in maximum security as the sole culprit or coming clean, or specifically links Danny to transport truck #4 and the urgent calls.",
+      "reveal_trigger": "Marcus's stress must be >= 0.85 AND the investigator must corner him with an ultimatum (warning that Danny will take the full 20-year sentence alone unless Marcus talks) or directly link Danny to transport truck #4.",
       "is_revealed": false
     }
   ],
