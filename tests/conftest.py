@@ -64,7 +64,9 @@ import os
 
 TEST_DATABASE_URL: str = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://nexus:nexus@localhost:5432/nexus_test",
+    "postgresql+asyncpg://nexus:nexus@postgres:5432/nexus_test"
+    if os.path.exists("/app")
+    else "postgresql+asyncpg://nexus:nexus@localhost:5432/nexus_test",
 )
 
 # ── pytest-asyncio configuration ──────────────────────────────────────────────
