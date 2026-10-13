@@ -122,6 +122,26 @@ def get_terminal_width() -> int:
         return 80
 
 
+def get_terminal_height() -> int:
+    """Return actual visible console window rows, accounting for Windows snap/resizing."""
+    if sys.platform == "win32":
+        try:
+            import ctypes, struct
+            h = ctypes.windll.kernel32.GetStdHandle(-11)
+            csbi = ctypes.create_string_buffer(22)
+            if ctypes.windll.kernel32.GetConsoleScreenBufferInfo(h, csbi):
+                _, _, _, _, _, left, top, right, bottom, _, _ = struct.unpack("hhhhHhhhhhh", csbi.raw)
+                win_h = bottom - top + 1
+                if win_h > 10:
+                    return win_h
+        except Exception:
+            pass
+    try:
+        return shutil.get_terminal_size((80, 24)).lines
+    except Exception:
+        return 24
+
+
 def val(obj, key, default=0.0):
     """Read a field from a dict or a Pydantic model."""
     if obj is None:
@@ -214,24 +234,44 @@ def render_hud(face_lines, behaviour, state, delta, history, latency=None, secre
         r_lines.append(f"{BOLD}TRANSCRIPT:{RESET}")
 
         # Available rows for the transcript
-        avail_rows = max(3, len(face_lines) - len(r_lines))
+        term_h = get_terminal_height()
+        target_rows = max(len(face_lines), min(term_h - 4, 38))
+        avail_rows = max(6, target_rows - len(r_lines))
 
-        # Format turns from newest to oldest so we never slice a turn in half
+        # Group history into (player_line, npc_line) turns
+        turns = []
+        i = 0
+        while i < len(history):
+            if i + 1 < len(history) and history[i][0].lower() == "player" and history[i+1][0].lower() != "player":
+                turns.append((history[i], history[i+1]))
+                i += 2
+            else:
+                turns.append((history[i], None))
+                i += 1
+
+        # Format turns from newest to oldest. The newest turn is ALWAYS included in full.
         formatted_turns = []
         total_rows_used = 0
-        for speaker, text in reversed(history):
-            color = CYAN if speaker.lower() == "player" else WHITE
-            prefix = f"{BOLD}{color}{speaker}:{RESET} "
-            indent = " " * (len(speaker) + 2)
-            w_text = textwrap.fill(text, width=right_w - 2, initial_indent=prefix, subsequent_indent=indent)
-            turn_lines = w_text.split("\n")
-            needed = len(turn_lines) + (1 if formatted_turns else 0)
-            if total_rows_used + len(turn_lines) > avail_rows:
+        for idx, (p, m) in enumerate(reversed(turns)):
+            turn_lines = []
+            color_p = CYAN if p[0].lower() == "player" else WHITE
+            prefix_p = f"{BOLD}{color_p}{p[0]}:{RESET} "
+            indent_p = " " * (len(p[0]) + 2)
+            turn_lines.extend(textwrap.fill(p[1], width=right_w - 2, initial_indent=prefix_p, subsequent_indent=indent_p).split("\n"))
+            if m:
+                color_m = CYAN if m[0].lower() == "player" else WHITE
+                prefix_m = f"{BOLD}{color_m}{m[0]}:{RESET} "
+                indent_m = " " * (len(m[0]) + 2)
+                turn_lines.extend(textwrap.fill(m[1], width=right_w - 2, initial_indent=prefix_m, subsequent_indent=indent_m).split("\n"))
+
+            cost = len(turn_lines) + (1 if formatted_turns else 0)
+            # The newest turn (idx == 0) is MANDATORY and NEVER dropped or truncated!
+            if idx > 0 and (total_rows_used + cost > avail_rows):
                 break
             if formatted_turns:
                 turn_lines.append("")  # blank line spacer between turns
             formatted_turns.append(turn_lines)
-            total_rows_used += needed
+            total_rows_used += cost
 
         transcript_lines = []
         for turn_lines in reversed(formatted_turns):
@@ -243,13 +283,10 @@ def render_hud(face_lines, behaviour, state, delta, history, latency=None, secre
 
         r_lines.extend(transcript_lines)
 
-        # Pad to match face height
-        while len(r_lines) < len(face_lines):
-            r_lines.append("")
-
+        max_rows = max(len(face_lines), len(r_lines))
         combined = []
-        for i in range(len(face_lines)):
-            f_l = face_lines[i]
+        for i in range(max_rows):
+            f_l = face_lines[i] if i < len(face_lines) else " " * face_w
             r_l = r_lines[i] if i < len(r_lines) else ""
             combined.append(f"{f_l} {DIM}│{RESET} {r_l}\033[K")
 
@@ -272,9 +309,13 @@ def render_hud(face_lines, behaviour, state, delta, history, latency=None, secre
         if secret:
             out.append(f"  {BOLD}{RED}🚨 CRACKED: {secret} 🚨{RESET}\033[K")
         out.append(f"{DIM}{'─' * min(term_w, 60)}{RESET}\033[K")
-        for speaker, text in history[-3:]:
+        for speaker, text in history[-4:]:
             color = CYAN if speaker.lower() == "player" else WHITE
-            out.append(f"  {BOLD}{color}{speaker}:{RESET} {text}\033[K")
+            prefix = f"{BOLD}{color}{speaker}:{RESET} "
+            indent = " " * (len(speaker) + 2)
+            w_text = textwrap.fill(text, width=max(30, term_w - 4), initial_indent=prefix, subsequent_indent=indent)
+            for l in w_text.split("\n"):
+                out.append(f"  {l}\033[K")
         out.append(f"{DIM}{'─' * min(term_w, 60)}{RESET}\033[K")
         return "\n".join(out)
 
