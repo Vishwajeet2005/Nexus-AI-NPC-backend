@@ -31,15 +31,30 @@ export default function NPCMonitor() {
       setActiveSessionId(sessionId);
       return;
     }
-    const checkLatest = () => {
-      api.sessions.list().then((list) => {
+    const checkLatest = async () => {
+      try {
+        const list = await api.sessions.list();
         if (list && list.length > 0) {
+          // Look for the most recent session that has NPCs
+          for (const s of list.slice(0, 10)) {
+            try {
+              const npcs = await api.npcs.listInSession(s.id);
+              if (npcs && npcs.length > 0) {
+                setActiveSessionId((prev) => (prev !== s.id ? s.id : prev));
+                return;
+              }
+            } catch {
+              // ignore
+            }
+          }
           setActiveSessionId((prev) => (prev !== list[0].id ? list[0].id : prev));
         }
-      }).catch(() => {});
+      } catch {
+        // ignore
+      }
     };
-    checkLatest();
-    const timer = setInterval(checkLatest, 3000);
+    void checkLatest();
+    const timer = setInterval(() => { void checkLatest(); }, 3000);
     return () => clearInterval(timer);
   }, [sessionId]);
 
@@ -58,14 +73,17 @@ export default function NPCMonitor() {
   useEffect(() => {
     if (!selectedNpcId) return;
     setLoading(true);
-    Promise.all([api.npcs.get(selectedNpcId), api.npcs.getMemory(selectedNpcId, 20)])
-      .then(([npcData, memData]) => {
-        setNpc(npcData);
-        setState(npcData.current_emotional_state);
-        setBehaviour(npcData.current_behaviour);
-        setMemory(memData.entries);
+    Promise.allSettled([api.npcs.get(selectedNpcId), api.npcs.getMemory(selectedNpcId, 20)])
+      .then(([npcRes, memRes]) => {
+        if (npcRes.status === "fulfilled" && npcRes.value) {
+          setNpc(npcRes.value);
+          setState(npcRes.value.current_emotional_state);
+          setBehaviour(npcRes.value.current_behaviour);
+        }
+        if (memRes.status === "fulfilled" && memRes.value?.entries) {
+          setMemory(memRes.value.entries);
+        }
       })
-      .catch(() => {})
       .finally(() => setLoading(false));
   }, [selectedNpcId]);
 
@@ -73,11 +91,15 @@ export default function NPCMonitor() {
     if (!selectedNpcId) return;
     // Auto-poll every 1.5s to ensure instantaneous sync with terminal
     const interval = setInterval(() => {
-      Promise.all([api.npcs.get(selectedNpcId), api.npcs.getMemory(selectedNpcId, 20)])
-        .then(([npcData, memData]) => {
-          setState(npcData.current_emotional_state);
-          setBehaviour(npcData.current_behaviour);
-          setMemory(memData.entries);
+      Promise.allSettled([api.npcs.get(selectedNpcId), api.npcs.getMemory(selectedNpcId, 20)])
+        .then(([npcRes, memRes]) => {
+          if (npcRes.status === "fulfilled" && npcRes.value) {
+            setState(npcRes.value.current_emotional_state);
+            setBehaviour(npcRes.value.current_behaviour);
+          }
+          if (memRes.status === "fulfilled" && memRes.value?.entries) {
+            setMemory(memRes.value.entries);
+          }
         })
         .catch(() => {});
     }, 1500);

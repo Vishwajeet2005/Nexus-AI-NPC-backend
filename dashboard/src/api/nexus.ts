@@ -14,12 +14,48 @@ let _token: string | null = typeof window !== "undefined" ? localStorage.getItem
 export function setToken(token: string) {
   _token = token;
   if (typeof window !== "undefined") {
-    localStorage.setItem("nexus_token", token);
+    if (token) {
+      localStorage.setItem("nexus_token", token);
+    } else {
+      localStorage.removeItem("nexus_token");
+    }
   }
 }
 export function getToken() { return _token; }
 
-async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
+let _guestPromise: Promise<string> | null = null;
+
+async function getOrRenewGuestToken(): Promise<string> {
+  if (!_guestPromise) {
+    _guestPromise = fetch(`${V1}/auth/guest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error("Failed to acquire guest token");
+        return r.json() as Promise<{ access_token: string }>;
+      })
+      .then((data) => {
+        setToken(data.access_token);
+        return data.access_token;
+      })
+      .finally(() => {
+        _guestPromise = null;
+      });
+  }
+  return _guestPromise;
+}
+
+async function req<T>(method: string, path: string, body?: unknown, retry = true): Promise<T> {
+  // If we don't have a token and this isn't an auth endpoint, acquire a guest token first
+  if (!_token && !path.startsWith("/auth/")) {
+    try {
+      await getOrRenewGuestToken();
+    } catch {
+      // ignore
+    }
+  }
+
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (_token) headers["Authorization"] = `Bearer ${_token}`;
 
@@ -28,6 +64,17 @@ async function req<T>(method: string, path: string, body?: unknown): Promise<T> 
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });
+
+  // If 401 Unauthorized (expired or invalid token from an earlier DB session), refresh token and retry once
+  if (res.status === 401 && retry && !path.startsWith("/auth/")) {
+    setToken("");
+    try {
+      await getOrRenewGuestToken();
+      return await req<T>(method, path, body, false);
+    } catch {
+      // Fall through to error
+    }
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));

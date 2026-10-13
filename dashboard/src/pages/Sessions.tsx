@@ -12,11 +12,26 @@ export default function Sessions() {
   const [filter, setFilter]     = useState<Filter>("all");
 
   useEffect(() => {
-    setLoading(true);
-    api.sessions.list()
-      .then((data) => setSessions(data as Session[]))
-      .catch(() => setSessions([]))
-      .finally(() => setLoading(false));
+    let mounted = true;
+    const fetchSessions = (isInitial = false) => {
+      if (isInitial) setLoading(true);
+      api.sessions.list()
+        .then((data) => {
+          if (mounted) setSessions(data as Session[]);
+        })
+        .catch(() => {
+          if (mounted) setSessions([]);
+        })
+        .finally(() => {
+          if (mounted && isInitial) setLoading(false);
+        });
+    };
+    fetchSessions(true);
+    const timer = setInterval(() => fetchSessions(false), 2500);
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
   }, []);
 
   const filtered = sessions.filter((s) =>
